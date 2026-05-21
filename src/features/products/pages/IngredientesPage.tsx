@@ -1,0 +1,131 @@
+import { useState } from "react";
+import { useIngredientes, useCrearIngrediente, useActualizarIngrediente, useEliminarIngrediente } from "../hooks/useIngredientes";
+import { useAuthStore } from "../../../store/authStore";
+
+export function IngredientesPage() {
+  const { hasRole } = useAuthStore();
+  const isAdmin = hasRole("ADMIN");
+  const { data, isLoading } = useIngredientes({ limit: 50, offset: 0 });
+  const { mutate: crear } = useCrearIngrediente();
+  const { mutate: actualizar } = useActualizarIngrediente();
+  const { mutate: eliminar } = useEliminarIngrediente();
+
+  const [nombre, setNombre] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [esAlergeno, setEsAlergeno] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim()) return;
+    if (editingId) {
+      actualizar({ id: editingId, data: { nombre, descripcion: descripcion || null, es_alergeno: esAlergeno } });
+    } else {
+      crear({ nombre, descripcion: descripcion || null, es_alergeno: esAlergeno });
+    }
+    setNombre("");
+    setDescripcion("");
+    setEsAlergeno(false);
+    setEditingId(null);
+  };
+
+  const handleEdit = (ing: { id: number; nombre: string; descripcion: string | null; es_alergeno: boolean }) => {
+    setEditingId(ing.id);
+    setNombre(ing.nombre);
+    setDescripcion(ing.descripcion || "");
+    setEsAlergeno(ing.es_alergeno);
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setNombre("");
+    setDescripcion("");
+    setEsAlergeno(false);
+  };
+
+  return (
+    <div>
+      <header className="mb-2xl">
+        <h2 className="font-headline-lg text-headline-lg text-on-surface">Gestión de Ingredientes</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Administre los ingredientes de su cocina.</p>
+      </header>
+
+      {isAdmin && (
+        <form onSubmit={handleSubmit} className="bg-surface-container border border-outline-variant rounded-lg p-lg mb-lg flex flex-col md:flex-row gap-md items-end">
+          <div className="flex-1 space-y-xs">
+            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nombre</label>
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ej: Mozzarella" required />
+          </div>
+          <div className="flex-1 space-y-xs">
+            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Descripción</label>
+            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Opcional" />
+          </div>
+          <label className="flex items-center gap-sm cursor-pointer">
+            <input type="checkbox" checked={esAlergeno} onChange={(e) => setEsAlergeno(e.target.checked)} className="w-5 h-5 rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary" />
+            <span className="font-label-sm text-label-sm text-on-surface-variant">Alérgeno</span>
+          </label>
+          <div className="flex gap-sm">
+            {editingId && (
+              <button type="button" onClick={handleCancel} className="px-md py-md border border-outline-variant rounded-lg text-on-surface hover:bg-surface-container-high transition-colors">
+                Cancelar
+              </button>
+            )}
+            <button type="submit" className="px-md py-md bg-primary-container text-white font-bold rounded-lg hover:brightness-110 transition-all">
+              {editingId ? "Actualizar" : "Crear"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-hidden shadow-xl">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-surface-container-high border-b border-outline-variant">
+            <tr>
+              <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Nombre</th>
+              <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Descripción</th>
+              <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider text-center">Alérgeno</th>
+              <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant/60">
+            {isLoading ? (
+              <tr><td colSpan={4} className="text-center py-xl text-on-surface-variant">Cargando...</td></tr>
+            ) : data?.data.length === 0 ? (
+              <tr><td colSpan={4} className="text-center py-xl text-on-surface-variant">No hay ingredientes</td></tr>
+            ) : (
+              data?.data.map((ing) => (
+                <tr key={ing.id} className="hover:bg-white/[0.03] transition-colors group">
+                  <td className="px-lg py-lg">
+                    <p className="font-title-lg text-body-lg font-semibold text-on-surface">{ing.nombre}</p>
+                  </td>
+                  <td className="px-lg py-lg font-body-md text-body-md text-on-surface-variant">{ing.descripcion || "—"}</td>
+                  <td className="px-lg py-lg text-center">
+                    {ing.es_alergeno ? (
+                      <span className="text-error font-label-sm">⚠️ Alérgeno</span>
+                    ) : (
+                      <span className="text-on-surface-variant font-label-sm">—</span>
+                    )}
+                  </td>
+                  <td className="px-lg py-lg">
+                    <div className="flex justify-end gap-md text-on-surface-variant">
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => handleEdit(ing)} className="hover:text-primary transition-colors">
+                            <span className="material-symbols-outlined text-[20px]">edit</span>
+                          </button>
+                          <button onClick={() => confirm("¿Eliminar?") && eliminar(ing.id)} className="hover:text-error transition-colors">
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  );
+}
