@@ -41,3 +41,11 @@ export function useEliminarCategoria() {
     onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 }
+
+export function useSubirImagenCategoria() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archivo }: { id: number; archivo: File }) => categoriaService.uploadImage(id, archivo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+  });
+}

@@ -30,4 +30,11 @@ export const categoriaService = {
   delete: async (id: number) => {
     await api.delete(`/categorias/${id}`);
   },
+
+  uploadImage: async (id: number, archivo: File) => {
+    const formData = new FormData();
+    formData.append("archivo", archivo);
+    const { data } = await api.post(`/categorias/${id}/imagen`, formData);
+    return data as CategoriaRead;
+  },
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "../types";
 import { useCategorias } from "../hooks/useCategorias";
 import { useIngredientes } from "../hooks/useIngredientes";
@@ -7,7 +7,7 @@ import { getProductImage } from "../../../shared/images";
 interface Props {
   producto: ProductoReadWithRelations | null;
   onClose: () => void;
-  onSave: (data: ProductoCreate | ProductoUpdate) => void;
+  onSave: (data: ProductoCreate | ProductoUpdate, archivo?: File | null) => void;
   readonly?: boolean;
 }
 
@@ -20,6 +20,9 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
   const [disponible, setDisponible] = useState(producto?.disponible ?? true);
   const [selectedCats, setSelectedCats] = useState<number[]>(producto?.categorias?.map(c => c.id) || []);
   const [selectedIngs, setSelectedIngs] = useState<number[]>(producto?.ingredientes?.map(i => i.id) || []);
+  const [imagenFile, setImagenFile] = useState<File | null>(null);
+  const [imagenPreview, setImagenPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: catData } = useCategorias({ limit: 100, offset: 0 });
   const { data: ingData } = useIngredientes({ limit: 100, offset: 0 });
@@ -36,32 +39,57 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
       setDisponible(producto.disponible);
       setSelectedCats(producto.categorias?.map(c => c.id) || []);
       setSelectedIngs(producto.ingredientes?.map(i => i.id) || []);
+      setImagenFile(null);
+      setImagenPreview(null);
     }
   }, [producto]);
 
+  // Limpiar preview URL al desmontar
+  useEffect(() => {
+    return () => { if (imagenPreview) URL.revokeObjectURL(imagenPreview); };
+  }, [imagenPreview]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Limpiar preview anterior
+      if (imagenPreview) URL.revokeObjectURL(imagenPreview);
+      setImagenFile(file);
+      setImagenPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveImage = () => {
+    if (imagenPreview) URL.revokeObjectURL(imagenPreview);
+    setImagenFile(null);
+    setImagenPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isEdit) {
-      onSave({
-        nombre: nombre || undefined,
-        descripcion: descripcion || undefined,
-        precio: precio || undefined,
-        stock_cantidad: stock,
-        disponible,
-        categoria_ids: selectedCats.length ? selectedCats : undefined,
-        ingrediente_ids: selectedIngs.length ? selectedIngs : undefined,
-      } as ProductoUpdate);
-    } else {
-      onSave({
-        nombre,
-        descripcion: descripcion || null,
-        precio,
-        stock_cantidad: stock,
-        disponible,
-        categoria_ids: selectedCats,
-        ingrediente_ids: selectedIngs,
-      } as ProductoCreate);
-    }
+    onSave(
+      (isEdit
+        ? {
+            nombre: nombre || undefined,
+            descripcion: descripcion || undefined,
+            precio: precio || undefined,
+            stock_cantidad: stock,
+            disponible,
+            categoria_ids: selectedCats.length ? selectedCats : undefined,
+            ingrediente_ids: selectedIngs.length ? selectedIngs : undefined,
+          } as ProductoUpdate
+        : {
+            nombre,
+            descripcion: descripcion || null,
+            precio,
+            stock_cantidad: stock,
+            disponible,
+            categoria_ids: selectedCats,
+            ingrediente_ids: selectedIngs,
+          } as ProductoCreate),
+      imagenFile
+    );
   };
 
   const toggleCat = (id: number) => {
@@ -85,11 +113,37 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto px-xl py-xl space-y-xl custom-scrollbar">
-          <div className="w-full h-[200px] rounded-xl overflow-hidden border border-outline-variant mb-lg">
-            <img
-              src={getProductImage(producto?.id || 0, 0)}
-              alt={nombre || "Producto"}
-              className="w-full h-full object-cover"
+          {/* Sección de imagen */}
+          <div className="relative w-full h-[200px] rounded-xl overflow-hidden border border-outline-variant mb-lg bg-surface-container-high flex items-center justify-center group">
+            {imagenPreview ? (
+              <img src={imagenPreview} alt="Preview" className="w-full h-full object-cover" />
+            ) : producto?.imagen_url ? (
+              <img src={producto.imagen_url} alt={producto.nombre} className="w-full h-full object-cover" />
+            ) : (
+              <img src={getProductImage(producto?.id || 0, 0)} alt="Placeholder" className="w-full h-full object-cover opacity-50" />
+            )}
+            {!readonly && (
+              <div className="absolute inset-0 flex items-center justify-center gap-sm opacity-0 group-hover:opacity-100 transition-opacity bg-surface-dim/60">
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="px-md py-sm bg-primary text-on-primary rounded-lg font-label-lg text-label-lg hover:brightness-110 active:scale-95 transition-all shadow-lg flex items-center gap-sm">
+                  <span className="material-symbols-outlined text-[18px]">photo_camera</span>
+                  {imagenPreview || producto?.imagen_url ? "Cambiar" : "Subir Imagen"}
+                </button>
+                {(imagenPreview || producto?.imagen_url) && (
+                  <button type="button" onClick={handleRemoveImage}
+                    className="px-md py-sm bg-error text-on-error rounded-lg font-label-lg text-label-lg hover:brightness-110 active:scale-95 transition-all shadow-lg flex items-center gap-sm">
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                    Quitar
+                  </button>
+                )}
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp"
+              onChange={handleImageChange}
+              className="hidden"
             />
           </div>
           <div className="grid gap-lg">

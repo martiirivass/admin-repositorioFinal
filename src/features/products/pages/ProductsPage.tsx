@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto } from "../hooks/useProducts";
+import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto, useSubirImagen } from "../hooks/useProducts";
 import { useAuthStore } from "../../../store/authStore";
 import { ProductFormDrawer } from "../components/ProductFormDrawer";
+import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
 import { getProductImage } from "../../../shared/images";
+import { formatARS } from "../../../shared/currency";
 import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "../types";
 
 export function ProductsPage() {
@@ -15,8 +17,10 @@ export function ProductsPage() {
   const { mutate: eliminar } = useEliminarProducto();
   const { mutate: crear } = useCrearProducto();
   const { mutate: actualizar } = useActualizarProducto();
+  const { mutate: subirImagen } = useSubirImagen();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProducto, setEditProducto] = useState<ProductoReadWithRelations | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProductoReadWithRelations | null>(null);
 
   const handleEdit = (p: ProductoReadWithRelations) => {
     setEditProducto(p);
@@ -28,11 +32,17 @@ export function ProductsPage() {
     setDrawerOpen(true);
   };
 
-  const handleSave = (formData: ProductoCreate | ProductoUpdate) => {
+  const handleSave = (formData: ProductoCreate | ProductoUpdate, archivo?: File | null) => {
     if (editProducto) {
-      actualizar({ id: editProducto.id, data: formData as ProductoUpdate });
+      actualizar(
+        { id: editProducto.id, data: formData as ProductoUpdate },
+        { onSuccess: () => { if (archivo) subirImagen({ id: editProducto.id, archivo }); } }
+      );
     } else {
-      crear(formData as ProductoCreate);
+      crear(
+        formData as ProductoCreate,
+        { onSuccess: (nuevo) => { if (archivo) subirImagen({ id: nuevo.id, archivo }); } }
+      );
     }
     setDrawerOpen(false);
     setEditProducto(null);
@@ -89,8 +99,12 @@ export function ProductsPage() {
                 <tr key={p.id} className="hover:bg-white/[0.03] transition-colors group">
                   <td className="px-lg py-lg">
                     <div className="flex items-center gap-md">
-                      <div className="w-14 h-14 rounded-lg overflow-hidden ring-1 ring-outline-variant shrink-0">
-                        <img src={getProductImage(p.id, idx)} alt={p.nombre} className="w-full h-full object-cover" />
+                      <div className="w-14 h-14 rounded-lg overflow-hidden ring-1 ring-outline-variant shrink-0 bg-surface-container-high flex items-center justify-center">
+                        {p.imagen_url ? (
+                          <img src={p.imagen_url} alt={p.nombre} className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={getProductImage(p.id, idx)} alt={p.nombre} className="w-full h-full object-cover" />
+                        )}
                       </div>
                       <div>
                         <p className="font-title-lg text-body-lg font-semibold text-on-surface">{p.nombre}</p>
@@ -98,7 +112,7 @@ export function ProductsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-lg py-lg text-right font-label-lg text-label-lg text-primary">${p.precio.toFixed(2)}</td>
+                  <td className="px-lg py-lg text-right font-label-lg text-label-lg text-primary">{formatARS(p.precio)}</td>
                   <td className="px-lg py-lg font-body-md text-body-md text-on-surface">
                     {p.categorias?.map((c) => c.nombre).join(", ") || "—"}
                   </td>
@@ -120,7 +134,7 @@ export function ProductsPage() {
                           <button onClick={() => handleEdit(p)} className="hover:text-primary transition-colors">
                             <span className="material-symbols-outlined text-[20px]">edit</span>
                           </button>
-                          <button onClick={() => confirm("¿Eliminar?") && eliminar(p.id)} className="hover:text-error transition-colors">
+                          <button onClick={() => setDeleteTarget(p)} className="hover:text-error transition-colors">
                             <span className="material-symbols-outlined text-[20px]">delete</span>
                           </button>
                         </>
@@ -164,6 +178,20 @@ export function ProductsPage() {
           readonly={!isAdmin}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="¿Eliminar producto?"
+        message={deleteTarget ? `Esta acción no se puede deshacer. ¿Estás seguro de eliminar "${deleteTarget.nombre}"?` : ""}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        destructive
+        onConfirm={() => {
+          if (deleteTarget) eliminar(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

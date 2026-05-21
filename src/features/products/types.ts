@@ -43,6 +43,7 @@ export interface ProductoRead {
   nombre: string;
   descripcion: string | null;
   precio: number;
+  imagen_url: string | null;
   stock_cantidad: number;
   disponible: boolean;
 }

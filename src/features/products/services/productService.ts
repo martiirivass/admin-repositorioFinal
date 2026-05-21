@@ -7,6 +7,13 @@ import type {
 } from "../types";
 
 export const productService = {
+
+  subirImagen: async (id: number, archivo: File) => {
+    const formData = new FormData();
+    formData.append("archivo", archivo);
+    const { data } = await api.post(`/productos/${id}/imagen`, formData);
+    return data as ProductoReadWithRelations;
+  },
   list: async (params?: { limit?: number; offset?: number; categoria_id?: number; disponible?: boolean; q?: string }) => {
     const { data } = await api.get("/productos", { params });
     return data as { data: ProductoReadWithRelations[]; total: number };
