@@ -4,7 +4,7 @@ import type { AvanceEstadoRequest } from "../types";
 
 const QUERY_KEY = ["pedidos"];
 
-export function usePedidos(params?: { limit?: number; offset?: number; estado_id?: number }) {
+export function usePedidos(params?: { limit?: number; offset?: number; estado_codigo?: string }) {
   return useQuery({
     queryKey: [...QUERY_KEY, "list", params],
     queryFn: () => pedidoService.list(params),

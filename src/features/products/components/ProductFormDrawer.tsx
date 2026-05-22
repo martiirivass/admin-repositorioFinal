@@ -73,7 +73,7 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
         ? {
             nombre: nombre || undefined,
             descripcion: descripcion || undefined,
-            precio: precio || undefined,
+            precio_base: precio || undefined,
             stock_cantidad: stock,
             disponible,
             categoria_ids: selectedCats.length ? selectedCats : undefined,
@@ -82,7 +82,7 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
         : {
             nombre,
             descripcion: descripcion || null,
-            precio,
+            precio_base: precio,
             stock_cantidad: stock,
             disponible,
             categoria_ids: selectedCats,

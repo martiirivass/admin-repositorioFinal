@@ -1,8 +1,8 @@
 import { api } from "../../../shared/api";
-import type { PedidoReadWithDetalles, AvanceEstadoRequest, EstadoPedido } from "../types";
+import type { PedidoReadWithDetalles, AvanceEstadoRequest, EstadoPedidoRead } from "../types";
 
 export const pedidoService = {
-  list: async (params?: { limit?: number; offset?: number; estado_id?: number }) => {
+  list: async (params?: { limit?: number; offset?: number; estado_codigo?: string }) => {
     const { data } = await api.get("/pedidos", { params });
     return data as { data: PedidoReadWithDetalles[]; total: number };
   },
@@ -23,7 +23,7 @@ export const pedidoService = {
   },
 
   getEstados: async () => {
-    const { data } = await api.get("/pedidos/estados");
-    return data as EstadoPedido[];
+    const { data } = await api.get("/estados-pedido");
+    return data as EstadoPedidoRead[];
   },
 };

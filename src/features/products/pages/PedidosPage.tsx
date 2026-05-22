@@ -10,16 +10,16 @@ const ESTADOS_MAP: Record<string, { label: string; color: string }> = {
   CANCELADO: { label: "Cancelado", color: "bg-red-900/30 text-red-400 border-red-400/20" },
 };
 
-const TRANSICIONES: Record<string, { id: number; codigo: string }[]> = {
-  PENDIENTE: [{ id: 2, codigo: "CONFIRMADO" }, { id: 6, codigo: "CANCELADO" }],
-  CONFIRMADO: [{ id: 3, codigo: "EN_PREP" }, { id: 6, codigo: "CANCELADO" }],
-  EN_PREP: [{ id: 4, codigo: "EN_CAMINO" }],
-  EN_CAMINO: [{ id: 5, codigo: "ENTREGADO" }],
+const TRANSICIONES: Record<string, { codigo: string }[]> = {
+  PENDIENTE: [{ codigo: "CONFIRMADO" }, { codigo: "CANCELADO" }],
+  CONFIRMADO: [{ codigo: "EN_PREP" }, { codigo: "CANCELADO" }],
+  EN_PREP: [{ codigo: "EN_CAMINO" }],
+  EN_CAMINO: [{ codigo: "ENTREGADO" }],
 };
 
 export function PedidosPage() {
-  const [filter, setFilter] = useState<number | undefined>(undefined);
-  const { data, isLoading } = usePedidos({ limit: 50, offset: 0, estado_id: filter });
+  const [filter, setFilter] = useState<string | undefined>(undefined);
+  const { data, isLoading } = usePedidos({ limit: 50, offset: 0, estado_codigo: filter });
   const { mutate: avanzar } = useAvanzarEstado();
 
   return (
@@ -32,7 +32,7 @@ export function PedidosPage() {
       <section className="bg-surface-container border border-outline-variant rounded-lg p-md mb-lg flex gap-md items-center shadow-md">
         <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Filtrar:</span>
         {Object.entries(ESTADOS_MAP).map(([key, val]) => (
-          <button key={key} onClick={() => setFilter(filter === undefined ? key === "PENDIENTE" ? 1 : undefined : undefined)}
+          <button key={key} onClick={() => setFilter(filter === undefined ? key === "PENDIENTE" ? key : undefined : undefined)}
             className={`px-sm py-1 rounded-lg font-label-sm text-label-sm border transition-colors ${val.color}`}
           >
             {val.label}
@@ -48,8 +48,8 @@ export function PedidosPage() {
           <p className="text-center py-xl text-on-surface-variant">No hay pedidos</p>
         ) : (
           data?.data.map((pedido) => {
-            const estadoActual = ESTADOS_MAP[pedido.estado_actual?.codigo || "PENDIENTE"] || ESTADOS_MAP.PENDIENTE;
-            const transiciones = TRANSICIONES[pedido.estado_actual?.codigo || "PENDIENTE"] || [];
+            const estadoActual = ESTADOS_MAP[pedido.estado_codigo] || ESTADOS_MAP.PENDIENTE;
+            const transiciones = TRANSICIONES[pedido.estado_codigo] || [];
 
             return (
               <article key={pedido.id} className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden hover:border-outline transition-all">
@@ -58,7 +58,7 @@ export function PedidosPage() {
                     <div className="space-y-1">
                       <h3 className="font-title-lg text-title-lg text-primary font-bold">#ORD-{String(pedido.id).padStart(4, "0")}</h3>
                       <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                        {new Date(pedido.fecha).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        {new Date(pedido.created_at).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                     <div className="flex items-center gap-xl">
@@ -79,10 +79,10 @@ export function PedidosPage() {
                           <span className="material-symbols-outlined">restaurant</span>
                         </div>
                         <div className="flex-grow">
-                          <p className="font-label-lg text-label-lg text-on-surface">{det.nombre_producto}</p>
-                          <p className="font-body-md text-body-md text-on-surface-variant">{det.cantidad}x ${det.precio_unitario.toFixed(2)}</p>
+                          <p className="font-label-lg text-label-lg text-on-surface">{det.nombre_snapshot}</p>
+                          <p className="font-body-md text-body-md text-on-surface-variant">{det.cantidad}x ${det.precio_snapshot.toFixed(2)}</p>
                         </div>
-                        <p className="font-label-lg text-label-lg text-primary font-bold">${det.subtotal.toFixed(2)}</p>
+                        <p className="font-label-lg text-label-lg text-primary font-bold">${det.subtotal_snap.toFixed(2)}</p>
                       </div>
                     ))}
                   </div>
@@ -92,7 +92,7 @@ export function PedidosPage() {
                       {transiciones.map((t) => (
                         <button
                           key={t.codigo}
-                          onClick={() => avanzar({ id: pedido.id, data: { estado_id: t.id } })}
+                          onClick={() => avanzar({ id: pedido.id, data: { estado_codigo: t.codigo } })}
                           className="px-xl py-md bg-primary text-on-primary font-label-lg text-label-lg rounded-lg font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/10"
                         >
                           {t.codigo === "CANCELADO" ? "Cancelar" : `Avanzar a ${ESTADOS_MAP[t.codigo]?.label || t.codigo}`}
@@ -107,7 +107,7 @@ export function PedidosPage() {
                       <div className="flex flex-wrap gap-sm">
                         {pedido.historial_estados.map((h) => (
                           <span key={h.id} className="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-sm py-1 rounded-lg">
-                            {h.observacion || `Estado #${h.estado_pedido_id}`} — {new Date(h.fecha).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                            {h.motivo || `Estado -> ${h.estado_hacia}`} — {new Date(h.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         ))}
                       </div>

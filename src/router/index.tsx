@@ -6,6 +6,11 @@ import { ProductsPage } from "../features/products/pages/ProductsPage";
 import { CategoriasPage } from "../features/products/pages/CategoriasPage";
 import { IngredientesPage } from "../features/products/pages/IngredientesPage";
 import { PedidosPage } from "../features/products/pages/PedidosPage";
+import { UsuariosPage } from "../features/products/pages/UsuariosPage";
+import { PagosPage } from "../features/products/pages/PagosPage";
+import { UnidadMedidaPage } from "../features/products/pages/UnidadMedidaPage";
+import { FormaPagoPage } from "../features/products/pages/FormaPagoPage";
+import { EstadoPedidoPage } from "../features/products/pages/EstadoPedidoPage";
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +26,11 @@ export const router = createBrowserRouter([
       { path: "categorias", element: <CategoriasPage /> },
       { path: "ingredientes", element: <IngredientesPage /> },
       { path: "pedidos", element: <PedidosPage /> },
+      { path: "usuarios", element: <UsuariosPage /> },
+      { path: "pagos", element: <PagosPage /> },
+      { path: "unidades-medida", element: <UnidadMedidaPage /> },
+      { path: "formas-pago", element: <FormaPagoPage /> },
+      { path: "estados-pedido", element: <EstadoPedidoPage /> },
     ],
   },
   {

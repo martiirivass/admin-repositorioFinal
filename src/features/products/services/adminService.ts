@@ -19,7 +19,7 @@ export interface VentasSemanalesResponse {
 }
 
 export const adminService = {
-  listUsers: async (params?: { limit?: number; offset?: number; rol_id?: number }) => {
+  listUsers: async (params?: { limit?: number; offset?: number; rol_codigo?: string }) => {
     const { data } = await api.get("/admin/usuarios", { params });
     return data as { data: AdminUser[]; total: number };
   },

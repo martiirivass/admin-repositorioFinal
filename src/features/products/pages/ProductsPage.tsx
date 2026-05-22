@@ -5,6 +5,7 @@ import { ProductFormDrawer } from "../components/ProductFormDrawer";
 import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
 import { getProductImage } from "../../../shared/images";
 import { formatARS } from "../../../shared/currency";
+import { useToast } from "../../../shared/components/Toast";
 import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "../types";
 
 export function ProductsPage() {
@@ -21,6 +22,7 @@ export function ProductsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProducto, setEditProducto] = useState<ProductoReadWithRelations | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductoReadWithRelations | null>(null);
+  const { showToast } = useToast();
 
   const handleEdit = (p: ProductoReadWithRelations) => {
     setEditProducto(p);
@@ -33,15 +35,40 @@ export function ProductsPage() {
   };
 
   const handleSave = (formData: ProductoCreate | ProductoUpdate, archivo?: File | null) => {
-    if (editProducto) {
+    const productoId = editProducto?.id;
+    if (productoId) {
       actualizar(
-        { id: editProducto.id, data: formData as ProductoUpdate },
-        { onSuccess: () => { if (archivo) subirImagen({ id: editProducto.id, archivo }); } }
+        { id: productoId, data: formData as ProductoUpdate },
+        {
+          onSuccess: () => {
+            showToast("Producto actualizado correctamente", "success");
+            if (archivo) subirImagen({ id: productoId, archivo }, {
+              onSuccess: () => showToast("Imagen subida correctamente", "success"),
+              onError: (err: any) => showToast("Error al subir imagen", "error"),
+            });
+          },
+          onError: (err: any) => {
+            const msg = err?.response?.data?.detail || err?.message || "Error al actualizar producto";
+            showToast(msg, "error");
+          },
+        }
       );
     } else {
       crear(
         formData as ProductoCreate,
-        { onSuccess: (nuevo) => { if (archivo) subirImagen({ id: nuevo.id, archivo }); } }
+        {
+          onSuccess: (nuevo) => {
+            showToast("Producto creado correctamente", "success");
+            if (archivo) subirImagen({ id: nuevo.id, archivo }, {
+              onSuccess: () => showToast("Imagen subida correctamente", "success"),
+              onError: (err: any) => showToast("Error al subir imagen", "error"),
+            });
+          },
+          onError: (err: any) => {
+            const msg = err?.response?.data?.detail || err?.message || "Error al crear producto";
+            showToast(msg, "error");
+          },
+        }
       );
     }
     setDrawerOpen(false);
@@ -187,7 +214,15 @@ export function ProductsPage() {
         cancelText="Cancelar"
         destructive
         onConfirm={() => {
-          if (deleteTarget) eliminar(deleteTarget.id);
+          if (deleteTarget) {
+            eliminar(deleteTarget.id, {
+              onSuccess: () => showToast("Producto eliminado", "success"),
+              onError: (err: any) => {
+                const msg = err?.response?.data?.detail || err?.message || "Error al eliminar";
+                showToast(msg, "error");
+              },
+            });
+          }
           setDeleteTarget(null);
         }}
         onCancel={() => setDeleteTarget(null)}

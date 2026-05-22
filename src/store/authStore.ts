@@ -5,7 +5,7 @@ interface User {
   id: number;
   nombre: string;
   email: string;
-  roles: { id: number; codigo: string; nombre: string }[];
+  roles: { codigo: string; nombre: string }[];
 }
 
 interface AuthStore {

@@ -3,6 +3,7 @@ export interface CategoriaRead {
   nombre: string;
   descripcion: string | null;
   parent_id: number | null;
+  imagen_url: string | null;
 }
 
 export interface CategoriaTree extends CategoriaRead {
@@ -42,8 +43,10 @@ export interface ProductoRead {
   id: number;
   nombre: string;
   descripcion: string | null;
-  precio: number;
+  precio_base: number;
+  precio: number; // alias property
   imagen_url: string | null;
+  imagenes_url: string | null;
   stock_cantidad: number;
   disponible: boolean;
 }
@@ -56,7 +59,7 @@ export interface ProductoReadWithRelations extends ProductoRead {
 export interface ProductoCreate {
   nombre: string;
   descripcion?: string | null;
-  precio: number;
+  precio_base: number;
   stock_cantidad?: number;
   disponible?: boolean;
   categoria_ids: number[];
@@ -66,7 +69,7 @@ export interface ProductoCreate {
 export interface ProductoUpdate {
   nombre?: string;
   descripcion?: string | null;
-  precio?: number;
+  precio_base?: number;
   stock_cantidad?: number;
   disponible?: boolean;
   categoria_ids?: number[];
@@ -79,44 +82,53 @@ export interface ProductoDisponibilidadUpdate {
 }
 
 export interface DetallePedidoRead {
-  id: number;
+  pedido_id: number;
   producto_id: number;
-  nombre_producto: string;
-  precio_unitario: number;
+  nombre_snapshot: string;
+  precio_snapshot: number;
   cantidad: number;
-  subtotal: number;
+  subtotal_snap: number;
+  personalizacion: string | null;
+  created_at: string;
 }
 
 export interface HistorialEstadoRead {
   id: number;
-  estado_pedido_id: number;
-  fecha: string;
-  observacion: string | null;
+  pedido_id: number;
+  estado_desde: string | null;
+  estado_hacia: string;
+  usuario_id: number | null;
+  motivo: string | null;
+  created_at: string;
 }
 
 export interface PedidoRead {
   id: number;
   usuario_id: number;
-  fecha: string;
+  direccion_id: number | null;
+  estado_codigo: string;
+  forma_pago_codigo: string;
+  subtotal: number;
+  descuento: number;
+  costo_envio: number;
   total: number;
-  estado_actual_id: number;
-  forma_pago_id: number;
-  direccion_entrega_id: number | null;
-  activo: boolean;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PedidoReadWithDetalles extends PedidoRead {
   detalles: DetallePedidoRead[];
   historial_estados: HistorialEstadoRead[];
+  pagos: PagoRead[];
   usuario?: { nombre: string; email: string };
-  estado_actual?: { id: number; codigo: string; nombre: string };
-  forma_pago?: { id: number; nombre: string };
 }
 
-export interface EstadoPedido {
-  id: number;
+export interface EstadoPedidoRead {
   codigo: string;
-  nombre: string;
+  descripcion: string;
+  orden: number;
+  es_terminal: boolean;
 }
 
 export interface AdminUser {
@@ -125,9 +137,50 @@ export interface AdminUser {
   apellido: string;
   email: string;
   deleted_at: string | null;
-  roles: { id: number; codigo: string; nombre: string }[];
+  roles: { codigo: string; nombre: string }[];
 }
 
 export interface AvanceEstadoRequest {
-  estado_id: number;
+  estado_codigo: string;
+}
+
+export interface PagoRead {
+  id: number;
+  pedido_id: number;
+  monto: number;
+  forma_pago_codigo: string;
+  referencia: string | null;
+  created_at: string;
+}
+
+export interface PagoCreate {
+  pedido_id: number;
+  monto: number;
+  forma_pago_codigo: string;
+  referencia?: string | null;
+}
+
+export interface FormaPagoRead {
+  codigo: string;
+  descripcion: string;
+  habilitado: boolean;
+}
+
+export interface UnidadMedidaRead {
+  id: number;
+  nombre: string;
+  simbolo: string;
+  tipo: string;
+}
+
+export interface UnidadMedidaCreate {
+  nombre: string;
+  simbolo: string;
+  tipo: string;
+}
+
+export interface UnidadMedidaUpdate {
+  nombre?: string;
+  simbolo?: string;
+  tipo?: string;
 }

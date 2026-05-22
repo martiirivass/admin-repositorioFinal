@@ -71,6 +71,11 @@ export function AdminLayout() {
             <SidebarLink to="/admin/productos" icon="inventory_2" label="Products" />
             <SidebarLink to="/admin/ingredientes" icon="set_meal" label="Ingredients" />
             <SidebarLink to="/admin/categorias" icon="category" label="Categories" />
+            <SidebarLink to="/admin/usuarios" icon="group" label="Users" />
+            <SidebarLink to="/admin/pagos" icon="payments" label="Payments" />
+            <SidebarLink to="/admin/unidades-medida" icon="straighten" label="Units" />
+            <SidebarLink to="/admin/formas-pago" icon="credit_card" label="Pay Methods" />
+            <SidebarLink to="/admin/estados-pedido" icon="alt_route" label="Order States" />
           </ul>
         </nav>
         <div className="mt-auto px-lg border-t border-outline-variant pt-lg flex items-center gap-md">

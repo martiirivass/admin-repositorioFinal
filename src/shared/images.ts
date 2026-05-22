@@ -24,6 +24,6 @@ export const PRODUCT_IMAGES_POOL: string[] = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBc2KCZr2L4yNiqU9fYrC0dPJeQWyOY73FHxcQox7O0lVrocOSbaPDNtqeJ7kUadvrOXQF8DMfV3flpa8uLYVpavnyfgN4yGZPiTNGCOoHM2CcoepWMN0Tt2Tlx2Kt0ZoDSCa2rsj7D6jogvKN74d3RybSufo1y6pdM4iPcJIcfIUrqoindwGdbGboZvLj9pckEmheCKwnB6ExfFYuEheMbkyZtcYHJyF6F1KkJNOUei2XXzHBDxikDRJuFTFjUKoyd03wFxZkt8kuP",
 ];
 
-export function getProductImage(_productId: number, index: number): string {
-  return PRODUCT_IMAGES_POOL[index % PRODUCT_IMAGES_POOL.length];
+export function getProductImage(productId: number, _index: number): string {
+  return PRODUCT_IMAGES_POOL[Math.abs(productId) % PRODUCT_IMAGES_POOL.length];
 }
