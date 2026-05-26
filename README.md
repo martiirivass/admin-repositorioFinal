@@ -194,6 +194,11 @@ Product.ts
 
 # Integrantes
 
-- Nombre Apellido
-- Nombre Apellido
-- Nombre Apellido
+- Martiniano Rivas
+- Enzo Dengra
+- Maximo Scopel
+- Gonzalo Fracchia
+
+# Link al video
+
+https://drive.google.com/file/d/18-4ZufOsukykmeYCd8krtd8QTFW80Ayd/view?usp=sharing
