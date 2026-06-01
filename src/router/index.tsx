@@ -1,16 +1,16 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AdminLayout } from "../features/products/components/AdminLayout";
 import { LoginPage } from "../features/auth/pages/LoginPage";
-import { DashboardPage } from "../features/products/pages/DashboardPage";
-import { ProductsPage } from "../features/products/pages/ProductsPage";
-import { CategoriasPage } from "../features/products/pages/CategoriasPage";
-import { IngredientesPage } from "../features/products/pages/IngredientesPage";
-import { PedidosPage } from "../features/products/pages/PedidosPage";
-import { UsuariosPage } from "../features/products/pages/UsuariosPage";
-import { PagosPage } from "../features/products/pages/PagosPage";
-import { UnidadMedidaPage } from "../features/products/pages/UnidadMedidaPage";
-import { FormaPagoPage } from "../features/products/pages/FormaPagoPage";
-import { EstadoPedidoPage } from "../features/products/pages/EstadoPedidoPage";
+import { DashboardPage } from "../features/dashboard/DashboardPage";
+import { ProductsPage } from "../features/products/ProductsPage";
+import { CategoriasPage } from "../features/categorias/CategoriasPage";
+import { IngredientesPage } from "../features/ingredientes/IngredientesPage";
+import { PedidosPage } from "../features/pedidos/PedidosPage";
+import { UsuariosPage } from "../features/usuarios/UsuariosPage";
+import { PagosPage } from "../features/pagos/PagosPage";
+import { UnidadMedidaPage } from "../features/unidad-medida/UnidadMedidaPage";
+import { FormaPagoPage } from "../features/forma-pago/FormaPagoPage";
+import { EstadoPedidoPage } from "../features/estado-pedido/EstadoPedidoPage";
 
 export const router = createBrowserRouter([
   {
