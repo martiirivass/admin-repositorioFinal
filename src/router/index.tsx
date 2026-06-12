@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { AdminLayout } from "../features/products/components/AdminLayout";
+import { AdminLayout } from "../layouts/AdminLayout";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { ProductsPage } from "../features/products/ProductsPage";

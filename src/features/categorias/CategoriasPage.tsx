@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { useCategorias, useCrearCategoria, useActualizarCategoria, useEliminarCategoria, useSubirImagenCategoria } from "./useCategorias";
 import { useAuthStore } from "../../store/authStore";
-
-const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "";
+import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import type { CategoriaRead } from "./types";
 
 export function CategoriasPage() {
   const { hasRole } = useAuthStore();
@@ -19,6 +19,7 @@ export function CategoriasPage() {
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenPreview, setImagenPreview] = useState<string | null>(null);
   const [editingImagenUrl, setEditingImagenUrl] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoriaRead | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,19 +29,19 @@ export function CategoriasPage() {
     setImagenPreview(URL.createObjectURL(file));
   };
 
+  const resetForm = () => {
+    setNombre("");
+    setDescripcion("");
+    setEditingId(null);
+    setImagenFile(null);
+    setImagenPreview(null);
+    setEditingImagenUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
-
-    const resetForm = () => {
-      setNombre("");
-      setDescripcion("");
-      setEditingId(null);
-      setImagenFile(null);
-      setImagenPreview(null);
-      setEditingImagenUrl(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    };
 
     if (editingId) {
       actualizar(
@@ -65,7 +66,7 @@ export function CategoriasPage() {
     }
   };
 
-  const handleEdit = (cat: { id: number; nombre: string; descripcion: string | null; imagen_url: string | null }) => {
+  const handleEdit = (cat: CategoriaRead) => {
     setEditingId(cat.id);
     setNombre(cat.nombre);
     setDescripcion(cat.descripcion || "");
@@ -75,57 +76,64 @@ export function CategoriasPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleCancel = () => {
-    setEditingId(null);
-    setNombre("");
-    setDescripcion("");
-    setImagenFile(null);
-    setImagenPreview(null);
-    setEditingImagenUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  const handleCancel = () => resetForm();
 
   return (
     <div>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="¿Eliminar categoría?"
+        message={deleteTarget ? `Esta acción no se puede deshacer. ¿Estás seguro de eliminar "${deleteTarget.nombre}"?` : ""}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        destructive
+        onConfirm={() => {
+          if (deleteTarget) eliminar(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <header className="mb-2xl">
-        <h2 className="font-headline-lg text-headline-lg text-on-surface">Gesti&oacute;n de Categor&iacute;as</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Organice su men&uacute; con categor&iacute;as y subcategor&iacute;as.</p>
+        <h2 className="font-headline-lg text-headline-lg text-on-surface">Gestión de Categorías</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Organice su menú con categorías y subcategorías.</p>
       </header>
 
       {isAdmin && (
         <form onSubmit={handleSubmit} className="bg-surface-container border border-outline-variant rounded-lg p-lg mb-lg flex flex-col md:flex-row gap-md items-end flex-wrap">
           <div className="flex-1 space-y-xs min-w-[180px]">
             <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nombre</label>
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ej: Pizzas" required />
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)}
+              className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              placeholder="Ej: Pizzas" required />
           </div>
           <div className="flex-1 space-y-xs min-w-[180px]">
-            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Descripci&oacute;n</label>
-            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Opcional" />
+            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Descripción</label>
+            <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
+              className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              placeholder="Opcional" />
           </div>
           <div className="space-y-xs min-w-[180px]">
             <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Imagen</label>
             <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleFileChange}
-                className="w-full text-on-surface text-body-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary-container file:text-white file:font-bold file:text-label-sm hover:file:brightness-110 cursor-pointer"
-              />
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange}
+                className="w-full text-on-surface text-body-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary-container file:text-white file:font-bold file:text-label-sm hover:file:brightness-110 cursor-pointer" />
               {(imagenPreview || editingImagenUrl) && (
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-outline-variant shrink-0">
-                  <img src={imagenPreview || `${API_URL}${editingImagenUrl}`} alt="" className="w-full h-full object-cover" />
+                  <img src={imagenPreview ?? editingImagenUrl ?? undefined} alt="" className="w-full h-full object-cover" />
                 </div>
               )}
             </div>
           </div>
           <div className="flex gap-sm items-end pb-[2px]">
             {editingId && (
-              <button type="button" onClick={handleCancel} className="px-md py-md border border-outline-variant rounded-lg text-on-surface hover:bg-surface-container-high transition-colors">
+              <button type="button" onClick={handleCancel}
+                className="px-md py-md border border-outline-variant rounded-lg text-on-surface hover:bg-surface-container-high transition-colors">
                 Cancelar
               </button>
             )}
-            <button type="submit" className="px-md py-md bg-primary-container text-white font-bold rounded-lg hover:brightness-110 transition-all">
+            <button type="submit"
+              className="px-md py-md bg-primary-container text-white font-bold rounded-lg hover:brightness-110 transition-all">
               {editingId ? "Actualizar" : "Crear"}
             </button>
           </div>
@@ -138,7 +146,7 @@ export function CategoriasPage() {
             <tr>
               <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider w-14">Img</th>
               <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Nombre</th>
-              <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Descripci&oacute;n</th>
+              <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Descripción</th>
               <th className="px-lg py-md font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider text-right">Acciones</th>
             </tr>
           </thead>
@@ -146,14 +154,14 @@ export function CategoriasPage() {
             {isLoading ? (
               <tr><td colSpan={4} className="text-center py-xl text-on-surface-variant">Cargando...</td></tr>
             ) : data?.data.length === 0 ? (
-              <tr><td colSpan={4} className="text-center py-xl text-on-surface-variant">No hay categor&iacute;as</td></tr>
+              <tr><td colSpan={4} className="text-center py-xl text-on-surface-variant">No hay categorías</td></tr>
             ) : (
               data?.data.map((cat) => (
                 <tr key={cat.id} className="hover:bg-white/[0.03] transition-colors group">
                   <td className="px-lg py-lg">
                     <div className="w-10 h-10 rounded-lg overflow-hidden border border-outline-variant bg-surface-container-high">
                       {cat.imagen_url ? (
-                        <img src={`${API_URL}${cat.imagen_url}`} alt={cat.nombre} className="w-full h-full object-cover" />
+                        <img src={cat.imagen_url} alt={cat.nombre} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <span className="material-symbols-outlined text-lg text-on-surface-variant/50">image</span>
@@ -163,7 +171,7 @@ export function CategoriasPage() {
                   </td>
                   <td className="px-lg py-lg">
                     <p className="font-title-lg text-body-lg font-semibold text-on-surface">{cat.nombre}</p>
-                    {cat.parent_id && <p className="font-label-sm text-label-sm text-on-surface-variant">Subcategor&iacute;a</p>}
+                    {cat.parent_id && <p className="font-label-sm text-label-sm text-on-surface-variant">Subcategoría</p>}
                   </td>
                   <td className="px-lg py-lg font-body-md text-body-md text-on-surface-variant">{cat.descripcion || "—"}</td>
                   <td className="px-lg py-lg">
@@ -173,7 +181,7 @@ export function CategoriasPage() {
                           <button onClick={() => handleEdit(cat)} className="hover:text-primary transition-colors">
                             <span className="material-symbols-outlined text-[20px]">edit</span>
                           </button>
-                          <button onClick={() => confirm("¿Eliminar?") && eliminar(cat.id)} className="hover:text-error transition-colors">
+                          <button onClick={() => setDeleteTarget(cat)} className="hover:text-error transition-colors">
                             <span className="material-symbols-outlined text-[20px]">delete</span>
                           </button>
                         </>

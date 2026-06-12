@@ -1,12 +1,6 @@
 import { create } from "zustand";
-import { api } from "../shared/api";
-
-interface User {
-  id: number;
-  nombre: string;
-  email: string;
-  roles: { codigo: string; nombre: string }[];
-}
+import { authService } from "../features/auth/services/authService";
+import type { User } from "../features/auth/services/authService";
 
 interface AuthStore {
   user: User | null;
@@ -25,21 +19,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   checkAuth: async () => {
     try {
-      const { data } = await api.get("/auth/me");
-      set({ user: data, isLogged: true, isLoading: false });
+      const user = await authService.checkAuth();
+      set({ user, isLogged: true, isLoading: false });
     } catch {
       set({ user: null, isLogged: false, isLoading: false });
     }
   },
 
   login: async (email: string, password: string) => {
-    await api.post("/auth/login", { email, password });
-    const { data } = await api.get("/auth/me");
-    set({ user: data, isLogged: true });
+    const user = await authService.login(email, password);
+    set({ user, isLogged: true });
   },
 
   logout: async () => {
-    await api.post("/auth/logout");
+    await authService.logout();
     set({ user: null, isLogged: false });
   },
 

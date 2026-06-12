@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useUsuarios, useEliminarUsuario } from "./useUsuarios";
+import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import type { AdminUser } from "../dashboard/types";
 
 export function UsuariosPage() {
   const [page, setPage] = useState(0);
   const [filterRol, setFilterRol] = useState<string | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const { data, isLoading } = useUsuarios({ limit: 50, offset: page * 50, rol_codigo: filterRol });
   const { mutate: eliminar } = useEliminarUsuario();
   const limit = 50;
@@ -12,8 +15,22 @@ export function UsuariosPage() {
 
   return (
     <div>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="¿Eliminar usuario?"
+        message={deleteTarget ? `Esta acción no se puede deshacer. ¿Estás seguro de eliminar a "${deleteTarget.nombre} ${deleteTarget.apellido}"?` : ""}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        destructive
+        onConfirm={() => {
+          if (deleteTarget) eliminar(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <header className="mb-2xl">
-        <h2 className="font-headline-lg text-headline-lg text-on-surface">Gesti&oacute;n de Usuarios</h2>
+        <h2 className="font-headline-lg text-headline-lg text-on-surface">Gestión de Usuarios</h2>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Administre los usuarios registrados en el sistema.</p>
       </header>
 
@@ -80,7 +97,7 @@ export function UsuariosPage() {
                   <td className="px-lg py-lg">
                     <div className="flex justify-end gap-md text-on-surface-variant">
                       {!u.deleted_at && (
-                        <button onClick={() => confirm("¿Eliminar usuario?") && eliminar(u.id)} className="hover:text-error transition-colors">
+                        <button onClick={() => setDeleteTarget(u)} className="hover:text-error transition-colors">
                           <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
                       )}
