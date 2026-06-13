@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { useAdminOrdersFeed } from "../hooks/useAdminOrdersFeed";
+import { ConnectionBadge } from "../components/ConnectionBadge";
 
 interface SidebarLinkProps {
   to: string;
@@ -31,6 +33,7 @@ function SidebarLink({ to, icon, label }: SidebarLinkProps) {
 export function AdminLayout() {
   const { user, isLogged, isLoading, checkAuth, logout } = useAuthStore();
   const navigate = useNavigate();
+  useAdminOrdersFeed();
 
   useEffect(() => {
     checkAuth();
@@ -78,7 +81,10 @@ export function AdminLayout() {
             <SidebarLink to="/admin/estados-pedido" icon="alt_route" label="Order States" />
           </ul>
         </nav>
-        <div className="mt-auto px-lg border-t border-outline-variant pt-lg flex items-center gap-md">
+        <div className="px-lg py-md border-t border-outline-variant">
+          <ConnectionBadge />
+        </div>
+        <div className="px-lg pb-lg flex items-center gap-md">
           <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">
             {user?.nombre?.charAt(0) || "A"}
           </div>
