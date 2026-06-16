@@ -4,6 +4,7 @@ const ESTADOS_MAP: Record<string, { color: string }> = {
   PENDIENTE: { color: "bg-orange-900/30 text-primary border-primary/20" },
   CONFIRMADO: { color: "bg-blue-900/30 text-blue-400 border-blue-400/20" },
   EN_PREP: { color: "bg-yellow-900/30 text-yellow-400 border-yellow-400/20" },
+  EN_CAMINO: { color: "bg-cyan-900/30 text-cyan-400 border-cyan-400/20" },
   ENTREGADO: { color: "bg-green-900/30 text-green-400 border-green-400/20" },
   CANCELADO: { color: "bg-red-900/30 text-red-400 border-red-400/20" },
 };
