@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useAdminOrdersFeed } from "../hooks/useAdminOrdersFeed";
 import { ConnectionBadge } from "../components/ConnectionBadge";
@@ -31,8 +31,9 @@ function SidebarLink({ to, icon, label }: SidebarLinkProps) {
 }
 
 export function AdminLayout() {
-  const { user, isLogged, isLoading, checkAuth, logout } = useAuthStore();
+  const { user, isLogged, isLoading, checkAuth, logout, hasRole } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   useAdminOrdersFeed();
 
   useEffect(() => {
@@ -44,6 +45,27 @@ export function AdminLayout() {
       navigate("/login");
     }
   }, [isLogged, isLoading]);
+
+  const ROUTE_ROLES: Record<string, string[]> = {
+    "/admin": ["ADMIN"],
+    "/admin/productos": ["ADMIN", "STOCK"],
+    "/admin/categorias": ["ADMIN"],
+    "/admin/ingredientes": ["ADMIN", "STOCK"],
+    "/admin/pedidos": ["ADMIN", "PEDIDOS"],
+    "/admin/usuarios": ["ADMIN"],
+    "/admin/pagos": ["ADMIN", "PEDIDOS"],
+    "/admin/unidades-medida": ["ADMIN", "STOCK"],
+    "/admin/formas-pago": ["ADMIN", "STOCK", "PEDIDOS"],
+    "/admin/estados-pedido": ["ADMIN", "PEDIDOS"],
+  };
+
+  useEffect(() => {
+    if (isLoading || !isLogged) return;
+    const allowed = ROUTE_ROLES[location.pathname];
+    if (allowed && !allowed.some((role) => hasRole(role))) {
+      navigate("/admin", { replace: true });
+    }
+  }, [location.pathname, isLogged, isLoading, hasRole, navigate]);
 
   const handleLogout = async () => {
     await logout();
