@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto, useSubirImagen } from "./useProducts";
+import { productService } from "./productService";
 import { useAuthStore } from "../../store/authStore";
 import { ProductFormDrawer } from "./ProductFormDrawer";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
@@ -7,6 +8,17 @@ import { getProductImage } from "../../shared/images";
 import { formatARS } from "../../shared/currency";
 import { useToast } from "../../shared/components/Toast";
 import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "./types";
+
+/**
+ * Extrae el public_id de una URL de Cloudinary.
+ * Formato: https://res.cloudinary.com/<cloud>/image/upload/v<version>/<folder>/<file>.<ext>
+ * Retorna null si la URL no es de Cloudinary.
+ */
+function extractPublicIdFromUrl(url: string | null | undefined): string | null {
+  if (!url || !url.includes("res.cloudinary.com")) return null;
+  const match = url.match(/\/upload\/v\d+\/(.+)\.\w+$/);
+  return match ? match[1] : null;
+}
 
 export function ProductsPage() {
   const { hasRole } = useAuthStore();
@@ -34,15 +46,54 @@ export function ProductsPage() {
     setDrawerOpen(true);
   };
 
-  const handleSave = (formData: ProductoCreate | ProductoUpdate, archivo?: File | null) => {
+  const handleSave = async (
+    formData: ProductoCreate | ProductoUpdate,
+    archivo: File | null | undefined,
+    img?: { removeExisting?: boolean; cloudinaryUrl?: string | null; cloudinaryPublicId?: string | null; setCloudinaryResult?: (url: string, publicId: string) => void; setUploading?: (v: boolean) => void; setUploadError?: (v: string | null) => void; }
+  ) => {
     const productoId = editProducto?.id;
+    // Merge de datos: partimos del form y agregamos imagenes_url si aplica
+    const merged = { ...formData } as any;
+
+    // 1) Si hay archivo para subir → Cloudinary upload
+    if (archivo) {
+      img?.setUploading?.(true);
+      img?.setUploadError?.(null);
+      try {
+        const result = await productService.cloudinaryUpload(archivo);
+        merged.imagenes_url = [result.secure_url];
+        img?.setCloudinaryResult?.(result.secure_url, result.public_id);
+        img?.setUploading?.(false);
+      } catch (err: any) {
+        const msg = err?.response?.data?.detail || err?.message || "Error al subir imagen a Cloudinary";
+        img?.setUploadError?.(msg);
+        img?.setUploading?.(false);
+        showToast(msg, "error");
+        return; // No guardar si falla la imagen
+      }
+    }
+
+    // 2) Si se quitó una imagen existente en Cloudinary
+    if (!archivo && editProducto?.imagen_url && img?.removeExisting) {
+      merged.imagenes_url = null;
+      const publicId = extractPublicIdFromUrl(editProducto.imagen_url);
+      if (publicId) {
+        try {
+          await productService.cloudinaryDelete(publicId);
+        } catch {
+          // Non-fatal: si falla la eliminación de Cloudinary, igual guardamos
+        }
+      }
+    }
+
     if (productoId) {
       actualizar(
-        { id: productoId, data: formData as ProductoUpdate },
+        { id: productoId, data: merged as ProductoUpdate },
         {
           onSuccess: () => {
             showToast("Producto actualizado correctamente", "success");
-            if (archivo) subirImagen({ id: productoId, archivo }, {
+            // Legacy local upload (para compatibilidad si no se usó Cloudinary)
+            if (archivo && !img?.cloudinaryUrl) subirImagen({ id: productoId, archivo }, {
               onSuccess: () => showToast("Imagen subida correctamente", "success"),
               onError: () => showToast("Error al subir imagen", "error"),
             });
@@ -55,11 +106,12 @@ export function ProductsPage() {
       );
     } else {
       crear(
-        formData as ProductoCreate,
+        merged as ProductoCreate,
         {
           onSuccess: (nuevo) => {
             showToast("Producto creado correctamente", "success");
-            if (archivo) subirImagen({ id: nuevo.id, archivo }, {
+            // Legacy local upload (para compatibilidad)
+            if (archivo && !img?.cloudinaryUrl) subirImagen({ id: nuevo.id, archivo }, {
               onSuccess: () => showToast("Imagen subida correctamente", "success"),
               onError: () => showToast("Error al subir imagen", "error"),
             });

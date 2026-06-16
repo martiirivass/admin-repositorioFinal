@@ -8,6 +8,19 @@ import type {
 
 export const productService = {
 
+  /** Sube imagen a Cloudinary */
+  cloudinaryUpload: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await api.post("/uploads/imagen", formData);
+    return data as { secure_url: string; public_id: string; width?: number; height?: number; format?: string; resource_type?: string };
+  },
+
+  /** Elimina imagen de Cloudinary */
+  cloudinaryDelete: async (publicId: string) => {
+    await api.delete(`/uploads/imagen/${publicId}`);
+  },
+
   subirImagen: async (id: number, archivo: File) => {
     const formData = new FormData();
     formData.append("archivo", archivo);

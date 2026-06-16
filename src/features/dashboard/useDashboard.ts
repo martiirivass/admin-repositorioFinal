@@ -14,3 +14,17 @@ export function useVentasSemanales() {
     queryFn: () => adminService.getVentasSemanales(),
   });
 }
+
+export function usePedidosPorEstado() {
+  return useQuery({
+    queryKey: ["admin", "stats", "pedidos-por-estado"],
+    queryFn: () => adminService.getPedidosPorEstado(),
+  });
+}
+
+export function useIngresosPorFormaPago() {
+  return useQuery({
+    queryKey: ["admin", "stats", "ingresos-por-forma-pago"],
+    queryFn: () => adminService.getIngresosPorFormaPago(),
+  });
+}

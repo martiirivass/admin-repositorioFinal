@@ -8,7 +8,18 @@ import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "
 interface Props {
   producto: ProductoReadWithRelations | null;
   onClose: () => void;
-  onSave: (data: ProductoCreate | ProductoUpdate, archivo?: File | null) => void;
+  onSave: (
+    data: ProductoCreate | ProductoUpdate,
+    archivo?: File | null,
+    imgContext?: {
+      removeExisting: boolean;
+      cloudinaryUrl: string | null;
+      cloudinaryPublicId: string | null;
+      setCloudinaryResult: (url: string, publicId: string) => void;
+      setUploading: (v: boolean) => void;
+      setUploadError: (v: string | null) => void;
+    }
+  ) => void;
   readonly?: boolean;
 }
 
@@ -21,7 +32,18 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form.buildSubmitData(), img.file);
+    onSave(
+      form.buildSubmitData(),
+      img.file,
+      {
+        removeExisting: img.removeExisting,
+        cloudinaryUrl: img.cloudinaryUrl,
+        cloudinaryPublicId: img.cloudinaryPublicId,
+        setCloudinaryResult: img.setCloudinaryResult,
+        setUploading: img.setUploading,
+        setUploadError: img.setUploadError,
+      }
+    );
   };
 
   const categorias = catData?.data || [];
@@ -42,21 +64,31 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
         <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto px-xl py-xl space-y-xl custom-scrollbar">
           {/* Imagen */}
           <div className="relative w-full h-[200px] rounded-xl overflow-hidden border border-outline-variant mb-lg bg-surface-container-high flex items-center justify-center group">
-            {img.preview ? (
+            {/* Loading overlay */}
+            {img.uploading && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface-dim/80">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-sm" />
+                <span className="font-label-sm text-label-sm text-on-surface">Subiendo imagen...</span>
+              </div>
+            )}
+            {/* Preview: Cloudinary URL > local preview > existing > placeholder */}
+            {img.cloudinaryUrl ? (
+              <img src={img.cloudinaryUrl} alt="Cloudinary" className="w-full h-full object-cover" />
+            ) : img.preview ? (
               <img src={img.preview} alt="Preview" className="w-full h-full object-cover" />
-            ) : producto?.imagen_url ? (
+            ) : producto?.imagen_url && !img.removeExisting ? (
               <img src={producto.imagen_url} alt={producto.nombre} className="w-full h-full object-cover" />
             ) : (
               <img src={getProductImage(producto?.id || 0, 0)} alt="Placeholder" className="w-full h-full object-cover opacity-50" />
             )}
-            {!readonly && (
+            {!readonly && !img.uploading && (
               <div className="absolute inset-0 flex items-center justify-center gap-sm opacity-0 group-hover:opacity-100 transition-opacity bg-surface-dim/60">
                 <button type="button" onClick={() => img.fileInputRef.current?.click()}
                   className="px-md py-sm bg-primary text-on-primary rounded-lg font-label-lg text-label-lg hover:brightness-110 active:scale-95 transition-all shadow-lg flex items-center gap-sm">
                   <span className="material-symbols-outlined text-[18px]">photo_camera</span>
-                  {img.preview || producto?.imagen_url ? "Cambiar" : "Subir Imagen"}
+                  {img.preview || img.cloudinaryUrl || (producto?.imagen_url && !img.removeExisting) ? "Cambiar" : "Subir Imagen"}
                 </button>
-                {(img.preview || producto?.imagen_url) && (
+                {(img.preview || img.cloudinaryUrl || (producto?.imagen_url && !img.removeExisting)) && (
                   <button type="button" onClick={img.handleRemove}
                     className="px-md py-sm bg-error text-on-error rounded-lg font-label-lg text-label-lg hover:brightness-110 active:scale-95 transition-all shadow-lg flex items-center gap-sm">
                     <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -66,6 +98,12 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
               </div>
             )}
             <input ref={img.fileInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={img.handleChange} className="hidden" />
+            {/* Error message */}
+            {img.uploadError && (
+              <div className="absolute bottom-0 left-0 right-0 bg-error/90 text-on-error px-md py-xs text-label-sm text-center">
+                {img.uploadError}
+              </div>
+            )}
           </div>
           <div className="grid gap-lg">
             <div className="space-y-xs">
@@ -144,8 +182,13 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
             Cancelar
           </button>
           {!readonly && (
-            <button type="submit" onClick={handleSubmit} className="px-lg py-md bg-primary text-on-primary font-bold rounded-lg hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-primary/20">
-              {isEdit ? "Guardar Cambios" : "Crear Producto"}
+            <button type="submit" onClick={handleSubmit} disabled={img.uploading}
+              className={`px-lg py-md font-bold rounded-lg transition-all shadow-lg ${
+                img.uploading
+                  ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed"
+                  : "bg-primary text-on-primary hover:brightness-110 active:scale-[0.98] shadow-primary/20"
+              }`}>
+              {img.uploading ? "Subiendo imagen..." : (isEdit ? "Guardar Cambios" : "Crear Producto")}
             </button>
           )}
         </div>

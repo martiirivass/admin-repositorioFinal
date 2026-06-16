@@ -5,7 +5,7 @@ export interface ProductoRead {
   precio_base: number;
   precio: number;
   imagen_url: string | null;
-  imagenes_url: string | null;
+  imagenes_url: string[] | null;
   stock_cantidad: number;
   disponible: boolean;
 }

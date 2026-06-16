@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { authService } from "../features/auth/services/authService";
 import type { User } from "../features/auth/services/authService";
 
@@ -12,33 +13,41 @@ interface AuthStore {
   hasRole: (role: string) => boolean;
 }
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
-  user: null,
-  isLogged: false,
-  isLoading: true,
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isLogged: false,
+      isLoading: true,
 
-  checkAuth: async () => {
-    try {
-      const user = await authService.checkAuth();
-      set({ user, isLogged: true, isLoading: false });
-    } catch {
-      set({ user: null, isLogged: false, isLoading: false });
+      checkAuth: async () => {
+        try {
+          const user = await authService.checkAuth();
+          set({ user, isLogged: true, isLoading: false });
+        } catch {
+          set({ user: null, isLogged: false, isLoading: false });
+        }
+      },
+
+      login: async (email: string, password: string) => {
+        const user = await authService.login(email, password);
+        set({ user, isLogged: true });
+      },
+
+      logout: async () => {
+        await authService.logout();
+        set({ user: null, isLogged: false });
+      },
+
+      hasRole: (role: string) => {
+        const { user } = get();
+        if (!user) return false;
+        return user.roles.some((r) => r.codigo === role || r.codigo === "ADMIN");
+      },
+    }),
+    {
+      name: "auth-store",
+      partialize: (state) => ({ user: state.user, isLogged: state.isLogged }),
     }
-  },
-
-  login: async (email: string, password: string) => {
-    const user = await authService.login(email, password);
-    set({ user, isLogged: true });
-  },
-
-  logout: async () => {
-    await authService.logout();
-    set({ user: null, isLogged: false });
-  },
-
-  hasRole: (role: string) => {
-    const { user } = get();
-    if (!user) return false;
-    return user.roles.some((r) => r.codigo === role || r.codigo === "ADMIN");
-  },
-}));
+  )
+);
