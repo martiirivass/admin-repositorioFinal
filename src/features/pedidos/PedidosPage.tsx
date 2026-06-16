@@ -4,8 +4,7 @@ import { usePedidos, useAvanzarEstado } from "./usePedidos";
 const ESTADOS_MAP: Record<string, { label: string; color: string }> = {
   PENDIENTE: { label: "Pendiente", color: "bg-orange-900/30 text-primary border-primary/20" },
   CONFIRMADO: { label: "Confirmado", color: "bg-blue-900/30 text-blue-400 border-blue-400/20" },
-  EN_PREP: { label: "En Preparaci&oacute;n", color: "bg-yellow-900/30 text-yellow-400 border-yellow-400/20" },
-  EN_CAMINO: { label: "En Camino", color: "bg-cyan-900/30 text-cyan-400 border-cyan-400/20" },
+  EN_PREP: { label: "En Preparación", color: "bg-yellow-900/30 text-yellow-400 border-yellow-400/20" },
   ENTREGADO: { label: "Entregado", color: "bg-green-900/30 text-green-400 border-green-400/20" },
   CANCELADO: { label: "Cancelado", color: "bg-red-900/30 text-red-400 border-red-400/20" },
 };
@@ -13,8 +12,7 @@ const ESTADOS_MAP: Record<string, { label: string; color: string }> = {
 const TRANSICIONES: Record<string, { codigo: string }[]> = {
   PENDIENTE: [{ codigo: "CONFIRMADO" }, { codigo: "CANCELADO" }],
   CONFIRMADO: [{ codigo: "EN_PREP" }, { codigo: "CANCELADO" }],
-  EN_PREP: [{ codigo: "EN_CAMINO" }, { codigo: "CANCELADO" }],
-  EN_CAMINO: [{ codigo: "ENTREGADO" }, { codigo: "CANCELADO" }],
+  EN_PREP: [{ codigo: "ENTREGADO" }, { codigo: "CANCELADO" }],
 };
 
 export function PedidosPage() {
@@ -32,7 +30,7 @@ export function PedidosPage() {
       <section className="bg-surface-container border border-outline-variant rounded-lg p-md mb-lg flex gap-md items-center shadow-md">
         <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Filtrar:</span>
         {Object.entries(ESTADOS_MAP).map(([key, val]) => (
-          <button key={key} onClick={() => setFilter(filter === undefined ? key === "PENDIENTE" ? key : undefined : undefined)}
+          <button key={key} onClick={() => setFilter(filter === key ? undefined : key)}
             className={`px-sm py-1 rounded-lg font-label-sm text-label-sm border transition-colors ${val.color}`}
           >
             {val.label}
@@ -92,12 +90,19 @@ export function PedidosPage() {
                       {transiciones.map((t) => (
                         <button
                           key={t.codigo}
-                          onClick={() => avanzar({ id: pedido.id, data: { estado_codigo: t.codigo } })}
+                          onClick={() => {
+                            const motivo = t.codigo === "CANCELADO"
+                              ? prompt("Motivo de la cancelación:")
+                              : undefined;
+                            if (t.codigo === "CANCELADO" && !motivo) return;
+                            avanzar({ id: pedido.id, data: { estado_codigo: t.codigo, motivo } });
+                          }}
                           className="px-xl py-md bg-primary text-on-primary font-label-lg text-label-lg rounded-lg font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/10"
                         >
                           {t.codigo === "CANCELADO" ? "Cancelar" : `Avanzar a ${ESTADOS_MAP[t.codigo]?.label || t.codigo}`}
                         </button>
                       ))}
+
                     </div>
                   )}
 

@@ -31,7 +31,12 @@ function SidebarLink({ to, icon, label }: SidebarLinkProps) {
 }
 
 export function AdminLayout() {
-  const { user, isLogged, isLoading, checkAuth, logout, hasRole } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const isLogged = useAuthStore((s) => s.isLogged);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const checkAuth = useAuthStore((s) => s.checkAuth);
+  const logout = useAuthStore((s) => s.logout);
+  const hasRole = useAuthStore((s) => s.hasRole);
   const navigate = useNavigate();
   const location = useLocation();
   useAdminOrdersFeed();

@@ -26,3 +26,11 @@ export function useAvanzarEstado() {
     onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 }
+
+export function useEliminarPedido() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => pedidoService.eliminar(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+  });
+}
