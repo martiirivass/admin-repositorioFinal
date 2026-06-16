@@ -1,7 +1,7 @@
 import { useAuthStore } from "../../store/authStore";
 import { HERO_IMAGE } from "../../shared/images";
 import { formatARS } from "../../shared/currency";
-import { useResumenStats, useVentasSemanales } from "./useDashboard";
+import { useResumenStats, useVentasSemanales, usePedidosPorEstado, useIngresosPorFormaPago } from "./useDashboard";
 
 const DIAS = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"];
 
@@ -9,11 +9,26 @@ export function DashboardPage() {
   const { user } = useAuthStore();
   const { data: stats, isLoading: loadingStats } = useResumenStats();
   const { data: ventas, isLoading: loadingVentas } = useVentasSemanales();
+  const { data: pedidosEstado } = usePedidosPorEstado();
+  const { data: ingresosFP } = useIngresosPorFormaPago();
 
   // Encontrar el valor máximo para escalar las barras del gráfico
   const maxVenta = ventas?.data?.length
     ? Math.max(...ventas.data.map((v) => v.total), 1)
     : 1;
+
+  // Colores para los estados de pedido
+  const estadoColors: Record<string, string> = {
+    PENDIENTE: "bg-amber-500",
+    CONFIRMADO: "bg-blue-500",
+    EN_PREP: "bg-violet-500",
+    ENTREGADO: "bg-emerald-500",
+    CANCELADO: "bg-red-500",
+    EN_CAMINO: "bg-orange-500",
+  };
+
+  // Colores para formas de pago
+  const fpColors = ["bg-cyan-500", "bg-pink-500", "bg-teal-500", "bg-indigo-500"];
 
   return (
     <div>
@@ -114,33 +129,62 @@ export function DashboardPage() {
           </div>
         </section>
 
+        {/* Pedidos por Estado (PieChart reemplazo inline) */}
         <section className="bg-surface-container border border-outline-variant rounded-xl p-lg shadow-sm">
-          <h3 className="font-title-lg text-title-lg text-on-surface mb-xl">Acceso Rápido</h3>
-          <div className="space-y-lg">
-            <a href="/admin/productos" className="flex items-center gap-md p-md rounded-lg bg-surface-container-high hover:bg-surface-container-highest transition-colors">
-              <span className="material-symbols-outlined text-primary">inventory_2</span>
-              <div>
-                <p className="font-label-lg text-label-lg text-on-surface">Productos</p>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">Gestionar inventario</p>
+          <h3 className="font-title-lg text-title-lg text-on-surface mb-xl">Pedidos por Estado</h3>
+          {pedidosEstado?.data?.length
+            ? <div className="space-y-lg">
+                {pedidosEstado.data.map((item) => {
+                  const total = pedidosEstado.data.reduce((a, b) => a + b.cantidad, 0);
+                  const pct = total > 0 ? (item.cantidad / total) * 100 : 0;
+                  return (
+                    <div key={item.estado_codigo}>
+                      <div className="flex justify-between items-center mb-xs">
+                        <div className="flex items-center gap-sm">
+                          <span className={`w-3 h-3 rounded-full ${estadoColors[item.estado_codigo] || "bg-gray-400"}`} />
+                          <span className="font-label-md text-label-md text-on-surface">{item.estado_codigo}</span>
+                        </div>
+                        <span className="font-label-md text-label-md text-on-surface-variant">{item.cantidad} ({pct.toFixed(0)}%)</span>
+                      </div>
+                      <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${estadoColors[item.estado_codigo] || "bg-gray-400"}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </a>
-            <a href="/admin/pedidos" className="flex items-center gap-md p-md rounded-lg bg-surface-container-high hover:bg-surface-container-highest transition-colors">
-              <span className="material-symbols-outlined text-primary">receipt_long</span>
-              <div>
-                <p className="font-label-lg text-label-lg text-on-surface">Pedidos</p>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">Gestionar pedidos</p>
-              </div>
-            </a>
-            <a href="/admin/categorias" className="flex items-center gap-md p-md rounded-lg bg-surface-container-high hover:bg-surface-container-highest transition-colors">
-              <span className="material-symbols-outlined text-primary">category</span>
-              <div>
-                <p className="font-label-lg text-label-lg text-on-surface">Categorías</p>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">Organizar menú</p>
-              </div>
-            </a>
-          </div>
+            : <p className="font-body-md text-body-md text-on-surface-variant">Sin datos de pedidos</p>
+          }
         </section>
       </div>
+
+      {/* Segunda fila: Ingresos por forma de pago */}
+      <section className="bg-surface-container border border-outline-variant rounded-xl p-lg shadow-sm mt-lg">
+        <h3 className="font-title-lg text-title-lg text-on-surface mb-xl">Ingresos por Forma de Pago</h3>
+        {ingresosFP?.data?.length
+          ? <div className="space-y-lg">
+              {ingresosFP.data.map((item, i) => {
+                const maxTotal = Math.max(...ingresosFP.data.map((r) => r.total), 1);
+                const pct = (item.total / maxTotal) * 100;
+                return (
+                  <div key={item.forma_pago_codigo}>
+                    <div className="flex justify-between items-center mb-xs">
+                      <div className="flex items-center gap-sm">
+                        <span className={`w-3 h-3 rounded-full ${fpColors[i % fpColors.length]}`} />
+                        <span className="font-label-md text-label-md text-on-surface">{item.forma_pago_codigo}</span>
+                      </div>
+                      <span className="font-label-md text-label-md text-on-surface-variant">{formatARS(item.total)} ({item.cantidad} pedidos)</span>
+                    </div>
+                    <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${fpColors[i % fpColors.length]}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          : <p className="font-body-md text-body-md text-on-surface-variant">Sin datos de ingresos</p>
+        }
+      </section>
     </div>
   );
 }

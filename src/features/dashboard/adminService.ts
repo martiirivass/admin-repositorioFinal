@@ -1,5 +1,5 @@
 import { api } from "../../shared/api";
-import type { AdminUser, ResumenStats, VentasSemanalesResponse } from "./types";
+import type { AdminUser, ResumenStats, VentasSemanalesResponse, PedidosPorEstadoResponse, IngresosPorFormaPagoResponse } from "./types";
 
 export const adminService = {
   listUsers: async (params?: { limit?: number; offset?: number; rol_codigo?: string }) => {
@@ -19,5 +19,15 @@ export const adminService = {
   getVentasSemanales: async () => {
     const { data } = await api.get("/admin/stats/ventas-semanales");
     return data as VentasSemanalesResponse;
+  },
+
+  getPedidosPorEstado: async () => {
+    const { data } = await api.get("/admin/stats/pedidos-por-estado");
+    return data as PedidosPorEstadoResponse;
+  },
+
+  getIngresosPorFormaPago: async () => {
+    const { data } = await api.get("/admin/stats/ingresos-por-forma-pago");
+    return data as IngresosPorFormaPagoResponse;
   },
 };

@@ -23,3 +23,22 @@ export interface VentaDiaria {
 export interface VentasSemanalesResponse {
   data: VentaDiaria[];
 }
+
+export interface PedidosPorEstadoItem {
+  estado_codigo: string;
+  cantidad: number;
+}
+
+export interface PedidosPorEstadoResponse {
+  data: PedidosPorEstadoItem[];
+}
+
+export interface IngresoPorFormaPagoItem {
+  forma_pago_codigo: string;
+  total: number;
+  cantidad: number;
+}
+
+export interface IngresosPorFormaPagoResponse {
+  data: IngresoPorFormaPagoItem[];
+}
