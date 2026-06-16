@@ -13,9 +13,11 @@ export interface CategoriaTree extends CategoriaRead {
 export interface CategoriaCreate {
   nombre: string;
   descripcion?: string | null;
+  imagen_url?: string;
 }
 
 export interface CategoriaUpdate {
   nombre?: string;
   descripcion?: string | null;
+  imagen_url?: string;
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto, useSubirImagen } from "./useProducts";
+import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto, useSubirImagen, useSubirImagenUpload } from "./useProducts";
 import { useAuthStore } from "../../store/authStore";
 import { ProductFormDrawer } from "./ProductFormDrawer";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
@@ -19,6 +19,7 @@ export function ProductsPage() {
   const { mutate: crear } = useCrearProducto();
   const { mutate: actualizar } = useActualizarProducto();
   const { mutate: subirImagen } = useSubirImagen();
+  const { mutateAsync: subirImagenUpload } = useSubirImagenUpload();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProducto, setEditProducto] = useState<ProductoReadWithRelations | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductoReadWithRelations | null>(null);
@@ -34,19 +35,34 @@ export function ProductsPage() {
     setDrawerOpen(true);
   };
 
-  const handleSave = (formData: ProductoCreate | ProductoUpdate, archivo?: File | null) => {
+  const handleSave = async (formData: ProductoCreate | ProductoUpdate, archivo?: File | null) => {
     const productoId = editProducto?.id;
+    let imagenUrl: string | undefined;
+
+    // Step 1: Upload image FIRST if there's a file
+    if (archivo) {
+      try {
+        const uploadResult = await subirImagenUpload({ file: archivo, folder: "productos" });
+        imagenUrl = uploadResult.secure_url;
+        showToast("Imagen subida correctamente", "success");
+      } catch (err: any) {
+        const msg = err?.response?.data?.detail || err?.message || "Error al subir imagen";
+        showToast(msg, "error");
+        return;
+      }
+    }
+
+    // Step 2: Include image URL in product data
+    const productData = { ...formData } as any;
+    if (imagenUrl) {
+      productData.imagenes_url = [imagenUrl];
+    }
+
     if (productoId) {
       actualizar(
-        { id: productoId, data: formData as ProductoUpdate },
+        { id: productoId, data: productData as ProductoUpdate },
         {
-          onSuccess: () => {
-            showToast("Producto actualizado correctamente", "success");
-            if (archivo) subirImagen({ id: productoId, archivo }, {
-              onSuccess: () => showToast("Imagen subida correctamente", "success"),
-              onError: () => showToast("Error al subir imagen", "error"),
-            });
-          },
+          onSuccess: () => showToast("Producto actualizado correctamente", "success"),
           onError: (err: any) => {
             const msg = err?.response?.data?.detail || err?.message || "Error al actualizar producto";
             showToast(msg, "error");
@@ -55,14 +71,17 @@ export function ProductsPage() {
       );
     } else {
       crear(
-        formData as ProductoCreate,
+        productData as ProductoCreate,
         {
           onSuccess: (nuevo) => {
             showToast("Producto creado correctamente", "success");
-            if (archivo) subirImagen({ id: nuevo.id, archivo }, {
-              onSuccess: () => showToast("Imagen subida correctamente", "success"),
-              onError: () => showToast("Error al subir imagen", "error"),
-            });
+            // If we have an image URL but the create already went through, update the product
+            if (imagenUrl && nuevo?.id) {
+              actualizar(
+                { id: nuevo.id, data: { imagenes_url: [imagenUrl] } as ProductoUpdate },
+                { onError: () => showToast("Error al asociar imagen", "error") }
+              );
+            }
           },
           onError: (err: any) => {
             const msg = err?.response?.data?.detail || err?.message || "Error al crear producto";

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { productService } from "./productService";
+import { productService, uploadService } from "./productService";
 import type { ProductoCreate, ProductoUpdate, ProductoDisponibilidadUpdate } from "./types";
 
 const QUERY_KEY = ["productos"];
@@ -57,6 +57,15 @@ export function useSubirImagen() {
   return useMutation({
     mutationFn: ({ id, archivo }: { id: number; archivo: File }) =>
       productService.subirImagen(id, archivo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+  });
+}
+
+export function useSubirImagenUpload() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, folder }: { file: File; folder?: string }) =>
+      uploadService.subirImagen(file, folder),
     onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 }

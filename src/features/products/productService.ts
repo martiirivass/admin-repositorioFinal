@@ -6,14 +6,30 @@ import type {
   ProductoDisponibilidadUpdate,
 } from "./types";
 
-export const productService = {
+export interface UploadResponse {
+  secure_url: string;
+  public_id: string;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
+}
 
-  subirImagen: async (id: number, archivo: File) => {
+export const uploadService = {
+  subirImagen: async (file: File, folder: string = "productos"): Promise<UploadResponse> => {
     const formData = new FormData();
-    formData.append("archivo", archivo);
-    const { data } = await api.post(`/productos/${id}/imagen`, formData);
-    return data as ProductoReadWithRelations;
+    formData.append("file", file);
+    formData.append("folder", folder);
+    const { data } = await api.post("/uploads/imagen", formData);
+    return data as UploadResponse;
   },
+
+  eliminarImagen: async (publicId: string): Promise<void> => {
+    await api.delete(`/uploads/imagen/${publicId}`);
+  },
+};
+
+export const productService = {
   list: async (params?: { limit?: number; offset?: number; categoria_id?: number; disponible?: boolean; q?: string }) => {
     const { data } = await api.get("/productos", { params });
     return data as { data: ProductoReadWithRelations[]; total: number };

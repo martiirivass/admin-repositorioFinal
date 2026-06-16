@@ -23,6 +23,7 @@ export interface ProductoCreate {
   disponible?: boolean;
   categoria_ids: number[];
   ingrediente_ids: number[];
+  imagenes_url?: string[];
 }
 
 export interface ProductoUpdate {
@@ -33,6 +34,7 @@ export interface ProductoUpdate {
   disponible?: boolean;
   categoria_ids?: number[];
   ingrediente_ids?: number[];
+  imagenes_url?: string[];
 }
 
 export interface ProductoDisponibilidadUpdate {

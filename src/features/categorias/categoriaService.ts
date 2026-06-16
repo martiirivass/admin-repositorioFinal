@@ -1,4 +1,5 @@
 import { api } from "../../shared/api";
+import { uploadService } from "../products/productService";
 import type { CategoriaRead, CategoriaTree, CategoriaCreate, CategoriaUpdate } from "./types";
 
 export const categoriaService = {
@@ -32,9 +33,9 @@ export const categoriaService = {
   },
 
   uploadImage: async (id: number, archivo: File) => {
-    const formData = new FormData();
-    formData.append("archivo", archivo);
-    const { data } = await api.post(`/categorias/${id}/imagen`, formData);
+    const result = await uploadService.subirImagen(archivo, "categorias");
+    // Then update the category with the new image URL
+    const { data } = await api.put(`/categorias/${id}`, { imagen_url: result.secure_url });
     return data as CategoriaRead;
   },
 };
