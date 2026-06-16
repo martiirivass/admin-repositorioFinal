@@ -11,6 +11,7 @@ function getWsBaseUrl(): string {
 export function useAdminOrdersFeed() {
   const queryClient = useQueryClient();
   const isLogged = useAuthStore((s) => s.isLogged);
+  const connected = useWsStore((s) => s.connected);
   const lastMessage = useWsStore((s) => s.lastMessage);
   const connect = useWsStore((s) => s.connect);
   const disconnect = useWsStore((s) => s.disconnect);
@@ -27,17 +28,22 @@ export function useAdminOrdersFeed() {
     };
   }, [isLogged, connect, disconnect]);
 
+  // ── Resync on reconnect: refetch when WS connection is established ──
+  useEffect(() => {
+    if (connected) {
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+    }
+  }, [connected, queryClient]);
+
   // ── Invalidate queries when an order event arrives ──────────────────
   useEffect(() => {
     if (lastMessage?.event === "pedido_estado_changed") {
-      // Invalidates all queries starting with ["pedidos"]:
-      //   ["pedidos"], ["pedidos","list",params], ["pedidos",id]
       queryClient.invalidateQueries({ queryKey: ["pedidos"] });
     }
   }, [lastMessage, queryClient]);
 
   return {
-    connected: useWsStore((s) => s.connected),
+    connected,
     reconnectAttempts: useWsStore((s) => s.reconnectAttempts),
   };
 }

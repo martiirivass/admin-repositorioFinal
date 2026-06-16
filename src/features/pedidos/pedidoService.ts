@@ -18,6 +18,11 @@ export const pedidoService = {
     return data;
   },
 
+  eliminar: async (id: number) => {
+    const { data } = await api.delete(`/pedidos/${id}`);
+    return data;
+  },
+
   getHistorial: async (id: number) => {
     const { data } = await api.get(`/pedidos/${id}/historial`);
     return data;

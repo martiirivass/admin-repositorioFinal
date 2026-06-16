@@ -4,6 +4,7 @@ import { productService } from "./productService";
 import { useAuthStore } from "../../store/authStore";
 import { ProductFormDrawer } from "./ProductFormDrawer";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import { TableSkeleton } from "../../shared/components/Skeleton";
 import { getProductImage } from "../../shared/images";
 import { formatARS } from "../../shared/currency";
 import { useToast } from "../../shared/components/Toast";
@@ -170,7 +171,7 @@ export function ProductsPage() {
           </thead>
           <tbody className="divide-y divide-outline-variant/60">
             {isLoading ? (
-              <tr><td colSpan={6} className="text-center py-xl text-on-surface-variant">Cargando...</td></tr>
+              <TableSkeleton cols={6} rows={5} />
             ) : data?.data.length === 0 ? (
               <tr><td colSpan={6} className="text-center py-xl text-on-surface-variant">No hay productos</td></tr>
             ) : (

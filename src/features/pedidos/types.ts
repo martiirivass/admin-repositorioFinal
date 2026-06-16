@@ -43,4 +43,5 @@ export interface PedidoReadWithDetalles extends PedidoRead {
 
 export interface AvanceEstadoRequest {
   estado_codigo: string;
+  motivo?: string;
 }

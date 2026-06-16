@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useIngredientes, useCrearIngrediente, useActualizarIngrediente, useEliminarIngrediente } from "./useIngredientes";
 import { useAuthStore } from "../../store/authStore";
+import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import type { IngredienteRead } from "./types";
 
 export function IngredientesPage() {
   const { hasRole } = useAuthStore();
@@ -14,6 +16,7 @@ export function IngredientesPage() {
   const [descripcion, setDescripcion] = useState("");
   const [esAlergeno, setEsAlergeno] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<IngredienteRead | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +48,20 @@ export function IngredientesPage() {
 
   return (
     <div>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="¿Eliminar ingrediente?"
+        message={deleteTarget ? `Esta acción no se puede deshacer. ¿Estás seguro de eliminar "${deleteTarget.nombre}"?` : ""}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        destructive
+        onConfirm={() => {
+          if (deleteTarget) eliminar(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <header className="mb-2xl">
         <h2 className="font-headline-lg text-headline-lg text-on-surface">Gesti&oacute;n de Ingredientes</h2>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Administre los ingredientes de su cocina.</p>
@@ -113,7 +130,7 @@ export function IngredientesPage() {
                           <button onClick={() => handleEdit(ing)} className="hover:text-primary transition-colors">
                             <span className="material-symbols-outlined text-[20px]">edit</span>
                           </button>
-                          <button onClick={() => confirm("¿Eliminar?") && eliminar(ing.id)} className="hover:text-error transition-colors">
+                          <button onClick={() => setDeleteTarget(ing)} className="hover:text-error transition-colors">
                             <span className="material-symbols-outlined text-[20px]">delete</span>
                           </button>
                         </>

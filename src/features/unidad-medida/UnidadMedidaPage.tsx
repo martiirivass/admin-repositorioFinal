@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useUnidadesMedida, useCrearUnidadMedida, useActualizarUnidadMedida, useEliminarUnidadMedida } from "./useUnidadMedida";
+import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import type { UnidadMedidaRead } from "./types";
 
 export function UnidadMedidaPage() {
   const { data, isLoading } = useUnidadesMedida();
@@ -11,6 +13,7 @@ export function UnidadMedidaPage() {
   const [simbolo, setSimbolo] = useState("");
   const [tipo, setTipo] = useState("unidad");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UnidadMedidaRead | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +39,20 @@ export function UnidadMedidaPage() {
 
   return (
     <div>
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="¿Eliminar unidad de medida?"
+        message={deleteTarget ? `Esta acción no se puede deshacer. ¿Estás seguro de eliminar "${deleteTarget.nombre}"?` : ""}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        destructive
+        onConfirm={() => {
+          if (deleteTarget) eliminar(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
       <header className="mb-2xl">
         <h2 className="font-headline-lg text-headline-lg text-on-surface">Unidades de Medida</h2>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Administre las unidades de medida del inventario.</p>
@@ -98,7 +115,7 @@ export function UnidadMedidaPage() {
                       <button onClick={() => handleEdit(u)} className="hover:text-primary transition-colors">
                         <span className="material-symbols-outlined text-[20px]">edit</span>
                       </button>
-                      <button onClick={() => confirm("¿Eliminar?") && eliminar(u.id)} className="hover:text-error transition-colors">
+                      <button onClick={() => setDeleteTarget(u)} className="hover:text-error transition-colors">
                         <span className="material-symbols-outlined text-[20px]">delete</span>
                       </button>
                     </div>
