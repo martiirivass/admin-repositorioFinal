@@ -12,22 +12,22 @@ export const adminService = {
   },
 
   getResumenStats: async () => {
-    const { data } = await api.get("/admin/stats/resumen");
+    const { data } = await api.get("/estadisticas/resumen");
     return data as ResumenStats;
   },
 
   getVentasSemanales: async () => {
-    const { data } = await api.get("/admin/stats/ventas-semanales");
+    const { data } = await api.get("/estadisticas/ventas-semanales");
     return data as VentasSemanalesResponse;
   },
 
   getPedidosPorEstado: async () => {
-    const { data } = await api.get("/admin/stats/pedidos-por-estado");
+    const { data } = await api.get("/estadisticas/pedidos-por-estado");
     return data as PedidosPorEstadoResponse;
   },
 
   getIngresosPorFormaPago: async () => {
-    const { data } = await api.get("/admin/stats/ingresos-por-forma-pago");
+    const { data } = await api.get("/estadisticas/ingresos-por-forma-pago");
     return data as IngresosPorFormaPagoResponse;
   },
 };

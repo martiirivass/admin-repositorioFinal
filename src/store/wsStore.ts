@@ -10,24 +10,46 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let currentUrl = "";
 let reconnectCount = 0;
 let intentionalClose = false;
+let authRefreshUrl: string | null = null;
 
 interface WSState {
   connected: boolean;
   reconnectAttempts: number;
   lastMessage: Record<string, unknown> | null;
+  attempted: boolean;
   connect: (url: string) => void;
   disconnect: () => void;
   send: (data: string) => void;
+  setAuthRefreshUrl: (url: string) => void;
+}
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (!authRefreshUrl) return false;
+  try {
+    const resp = await fetch(authRefreshUrl, {
+      method: "POST",
+      credentials: "include",
+    });
+    return resp.ok;
+  } catch {
+    return false;
+  }
 }
 
 export const useWsStore = create<WSState>((set) => ({
   connected: false,
   reconnectAttempts: 0,
   lastMessage: null,
+  attempted: false,
+
+  setAuthRefreshUrl: (url: string) => {
+    authRefreshUrl = url;
+  },
 
   connect: (url: string) => {
     // Skip if already connected to the same URL
     if (ws && currentUrl === url && ws.readyState === WebSocket.OPEN) {
+      set({ attempted: true });
       return;
     }
 
@@ -49,7 +71,7 @@ export const useWsStore = create<WSState>((set) => ({
     currentUrl = url;
     reconnectCount = 0;
     intentionalClose = false;
-    set({ connected: false, reconnectAttempts: 0 });
+    set({ connected: false, reconnectAttempts: 0, attempted: true });
 
     const connectWs = () => {
       if (intentionalClose) return;
@@ -75,13 +97,20 @@ export const useWsStore = create<WSState>((set) => ({
         }
       };
 
-      ws.onclose = (event: CloseEvent) => {
+      ws.onclose = async (event: CloseEvent) => {
         set({ connected: false });
-        // Don't reconnect on auth errors (4001=no auth, 4003=forbidden)
-        const isAuthError = event.code === 4001 || event.code === 4003;
-        if (!intentionalClose && !isAuthError) {
-          scheduleReconnect();
+        if (intentionalClose) return;
+
+        // Auth error (4001 = no auth, 4003 = forbidden) → try refresh
+        if (event.code === 4001 || event.code === 4003) {
+          const refreshed = await tryRefreshToken();
+          if (refreshed) {
+            scheduleReconnect();
+          }
+          return;
         }
+
+        scheduleReconnect();
       };
 
       ws.onerror = () => {
@@ -130,7 +159,7 @@ export const useWsStore = create<WSState>((set) => ({
 
     currentUrl = "";
     reconnectCount = 0;
-    set({ connected: false, reconnectAttempts: 0, lastMessage: null });
+    set({ connected: false, reconnectAttempts: 0, lastMessage: null, attempted: false });
   },
 
   send: (data: string) => {

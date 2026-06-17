@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto, useSubirImagen, useSubirImagenUpload } from "./useProducts";
+import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto, useSubirImagenUpload } from "./useProducts";
 import { useAuthStore } from "../../store/authStore";
 import { ProductFormDrawer } from "./ProductFormDrawer";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
@@ -19,7 +19,6 @@ export function ProductsPage() {
   const { mutate: eliminar } = useEliminarProducto();
   const { mutate: crear } = useCrearProducto();
   const { mutate: actualizar } = useActualizarProducto();
-  const { mutate: subirImagen } = useSubirImagen();
   const { mutateAsync: subirImagenUpload } = useSubirImagenUpload();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProducto, setEditProducto] = useState<ProductoReadWithRelations | null>(null);
@@ -36,12 +35,24 @@ export function ProductsPage() {
     setDrawerOpen(true);
   };
 
-  const handleSave = async (formData: ProductoCreate | ProductoUpdate, archivo?: File | null) => {
+  const handleSave = async (
+    formData: ProductoCreate | ProductoUpdate,
+    archivo?: File | null,
+    imgContext?: {
+      removeExisting: boolean;
+      cloudinaryUrl: string | null;
+      cloudinaryPublicId: string | null;
+      setCloudinaryResult: (url: string, publicId: string) => void;
+      setUploading: (v: boolean) => void;
+      setUploadError: (v: string | null) => void;
+    }
+  ) => {
     const productoId = editProducto?.id;
     let imagenUrl: string | undefined;
 
-    // Step 1: Upload image FIRST if there's a file
+    // Step 1: Resolve image — three cases
     if (archivo) {
+      // Case A: New file selected → upload to Cloudinary
       try {
         const uploadResult = await subirImagenUpload({ file: archivo, folder: "productos" });
         imagenUrl = uploadResult.secure_url;
@@ -51,12 +62,21 @@ export function ProductsPage() {
         showToast(msg, "error");
         return;
       }
+    } else if (imgContext?.cloudinaryUrl) {
+      // Case B: Already uploaded via hook (pre-upload) → use that URL
+      imagenUrl = imgContext.cloudinaryUrl;
+    } else if (imgContext?.removeExisting) {
+      // Case C: User removed existing image without uploading a new one
+      imagenUrl = undefined;
     }
 
-    // Step 2: Include image URL in product data
+    // Step 2: Build product data
     const productData = { ...formData } as any;
     if (imagenUrl) {
       productData.imagenes_url = [imagenUrl];
+    } else if (imgContext?.removeExisting && !archivo) {
+      // Explicitly clear images when user removed existing image
+      productData.imagenes_url = [];
     }
 
     if (productoId) {
@@ -99,7 +119,7 @@ export function ProductsPage() {
 
   return (
     <div>
-      <header className="flex justify-between items-center mb-2xl">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-md mb-2xl">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Gesti&oacute;n de Productos</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Administre su inventario culinario con precisi&oacute;n editorial.</p>
@@ -124,7 +144,7 @@ export function ProductsPage() {
         </div>
       </section>
 
-      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-hidden shadow-xl">
+      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-x-auto shadow-xl">
         <table className="w-full text-left border-collapse">
           <thead className="bg-surface-container-high border-b border-outline-variant">
             <tr>
@@ -206,11 +226,30 @@ export function ProductsPage() {
           <button disabled={page === 0} onClick={() => setPage(p => p - 1)} className="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-30">
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button key={i} onClick={() => setPage(i)} className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${i === page ? "bg-primary-container text-white font-bold shadow-sm" : "border border-outline-variant hover:bg-surface-container-high"}`}>
-              {i + 1}
-            </button>
-          ))}
+          {(() => {
+            const pages = new Set<number>();
+            const siblingCount = 2;
+            pages.add(0);
+            for (let i = Math.max(0, page - siblingCount); i <= Math.min(totalPages - 1, page + siblingCount); i++) {
+              pages.add(i);
+            }
+            pages.add(totalPages - 1);
+            const sorted = [...pages].sort((a, b) => a - b);
+            const items: (number | null)[] = [];
+            for (let i = 0; i < sorted.length; i++) {
+              if (i > 0 && sorted[i] - sorted[i - 1] > 1) items.push(null);
+              items.push(sorted[i]);
+            }
+            return items.map((p, idx) =>
+              p === null ? (
+                <span key={`ellipsis-${idx}`} className="w-10 h-10 flex items-center justify-center text-on-surface-variant">&hellip;</span>
+              ) : (
+                <button key={p} onClick={() => setPage(p)} className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${p === page ? "bg-primary-container text-white font-bold shadow-sm" : "border border-outline-variant hover:bg-surface-container-high"}`}>
+                  {p + 1}
+                </button>
+              )
+            );
+          })()}
           <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-30">
             <span className="material-symbols-outlined">chevron_right</span>
           </button>

@@ -3,6 +3,9 @@ import { useWsStore } from "../store/wsStore";
 export function ConnectionBadge() {
   const connected = useWsStore((s) => s.connected);
   const reconnectAttempts = useWsStore((s) => s.reconnectAttempts);
+  const attempted = useWsStore((s) => s.attempted);
+
+  if (!attempted) return null;
 
   if (connected) {
     return (
@@ -22,5 +25,10 @@ export function ConnectionBadge() {
     );
   }
 
-  return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-red-400 font-label-sm text-label-sm">
+      <span className="w-2 h-2 rounded-full bg-red-400" />
+      Desconectado
+    </span>
+  );
 }

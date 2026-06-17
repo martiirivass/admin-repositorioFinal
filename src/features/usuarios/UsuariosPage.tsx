@@ -50,7 +50,7 @@ export function UsuariosPage() {
         {filterRol && <button onClick={() => setFilterRol(undefined)} className="text-on-surface-variant hover:text-primary font-label-sm">Limpiar</button>}
       </section>
 
-      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-hidden shadow-xl">
+      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-x-auto shadow-xl">
         <table className="w-full text-left border-collapse">
           <thead className="bg-surface-container-high border-b border-outline-variant">
             <tr>
@@ -117,12 +117,31 @@ export function UsuariosPage() {
             className="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-30">
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button key={i} onClick={() => setPage(i)}
-              className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${i === page ? "bg-primary-container text-white font-bold shadow-sm" : "border border-outline-variant hover:bg-surface-container-high"}`}>
-              {i + 1}
-            </button>
-          ))}
+          {(() => {
+            const pages = new Set<number>();
+            const siblingCount = 2;
+            pages.add(0);
+            for (let i = Math.max(0, page - siblingCount); i <= Math.min(totalPages - 1, page + siblingCount); i++) {
+              pages.add(i);
+            }
+            pages.add(totalPages - 1);
+            const sorted = [...pages].sort((a, b) => a - b);
+            const items: (number | null)[] = [];
+            for (let i = 0; i < sorted.length; i++) {
+              if (i > 0 && sorted[i] - sorted[i - 1] > 1) items.push(null);
+              items.push(sorted[i]);
+            }
+            return items.map((p, idx) =>
+              p === null ? (
+                <span key={`ellipsis-${idx}`} className="w-10 h-10 flex items-center justify-center text-on-surface-variant">&hellip;</span>
+              ) : (
+                <button key={p} onClick={() => setPage(p)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${p === page ? "bg-primary-container text-white font-bold shadow-sm" : "border border-outline-variant hover:bg-surface-container-high"}`}>
+                  {p + 1}
+                </button>
+              )
+            );
+          })()}
           <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}
             className="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors disabled:opacity-30">
             <span className="material-symbols-outlined">chevron_right</span>

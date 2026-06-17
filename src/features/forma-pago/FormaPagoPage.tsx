@@ -10,7 +10,7 @@ export function FormaPagoPage() {
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Cat&aacute;logo de m&eacute;todos de pago disponibles en el sistema.</p>
       </header>
 
-      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-hidden shadow-xl">
+      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-x-auto shadow-xl">
         <table className="w-full text-left border-collapse">
           <thead className="bg-surface-container-high border-b border-outline-variant">
             <tr>

@@ -15,6 +15,13 @@ export function useAdminOrdersFeed() {
   const lastMessage = useWsStore((s) => s.lastMessage);
   const connect = useWsStore((s) => s.connect);
   const disconnect = useWsStore((s) => s.disconnect);
+  const setAuthRefreshUrl = useWsStore((s) => s.setAuthRefreshUrl);
+
+  // ── Configure auth refresh endpoint for WS token refresh ────────────
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    setAuthRefreshUrl(`${apiUrl}/auth/refresh`);
+  }, [setAuthRefreshUrl]);
 
   // ── Connect to admin WS feed only while authenticated ───────────────
   useEffect(() => {

@@ -119,7 +119,7 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
                 rows={4} readOnly={readonly} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
             <div className="space-y-xs">
               <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Precio ($)</label>
               <div className="relative">
@@ -177,7 +177,7 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
             </div>
           </div>
         </form>
-        <div className="px-xl py-xl border-t border-outline-variant grid grid-cols-2 gap-lg bg-surface-container-high">
+        <div className="px-xl py-xl border-t border-outline-variant grid grid-cols-1 md:grid-cols-2 gap-lg bg-surface-container-high">
           <button type="button" onClick={onClose} className="px-lg py-md border border-outline-variant text-on-surface font-semibold rounded-lg hover:bg-surface-container-highest transition-colors active:scale-[0.98]">
             Cancelar
           </button>

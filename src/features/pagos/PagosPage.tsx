@@ -71,7 +71,7 @@ export function PagosPage() {
         </form>
       )}
 
-      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-hidden shadow-xl">
+      <section className="bg-surface-container border border-outline-variant rounded-lg overflow-x-auto shadow-xl">
         <table className="w-full text-left border-collapse">
           <thead className="bg-surface-container-high border-b border-outline-variant">
             <tr>

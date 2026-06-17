@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useAdminOrdersFeed } from "../hooks/useAdminOrdersFeed";
@@ -8,13 +8,15 @@ interface SidebarLinkProps {
   to: string;
   icon: string;
   label: string;
+  onNavigate?: () => void;
 }
 
-function SidebarLink({ to, icon, label }: SidebarLinkProps) {
+function SidebarLink({ to, icon, label, onNavigate }: SidebarLinkProps) {
   return (
     <li>
       <NavLink
         to={to}
+        onClick={onNavigate}
         className={({ isActive }) =>
           `flex items-center gap-md px-lg py-md transition-colors ${
             isActive
@@ -41,6 +43,9 @@ export function AdminLayout() {
   const location = useLocation();
   useAdminOrdersFeed();
 
+  const [sidebarAbierto, setSidebarAbierto] = useState(() => window.innerWidth >= 1024);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -50,6 +55,19 @@ export function AdminLayout() {
       navigate("/login");
     }
   }, [isLogged, isLoading]);
+
+  // Detectar mobile/desktop y auto-abrir sidebar en desktop
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const handler = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+      if (!e.matches) setSidebarAbierto(true);
+    };
+    setIsMobile(mql.matches);
+    if (!mql.matches) setSidebarAbierto(true);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   const ROUTE_ROLES: Record<string, string[]> = {
     "/admin": ["ADMIN"],
@@ -77,6 +95,10 @@ export function AdminLayout() {
     navigate("/login");
   };
 
+  const cerrarSidebar = () => {
+    if (isMobile) setSidebarAbierto(false);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -89,23 +111,52 @@ export function AdminLayout() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="fixed left-0 top-0 h-full w-[280px] bg-surface-container-low border-r border-outline-variant flex flex-col py-lg z-50">
+      {/* Overlay para mobile */}
+      {isMobile && sidebarAbierto && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={cerrarSidebar}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed left-0 top-0 h-full w-[280px] bg-surface-container-low
+          border-r border-outline-variant flex flex-col py-lg
+          z-50 transition-transform duration-300 ease-in-out
+          ${isMobile ? (sidebarAbierto ? "translate-x-0" : "-translate-x-full") : "translate-x-0 lg:translate-x-0"}
+        `}
+      >
         <div className="px-lg mb-2xl">
-          <h1 className="font-headline-md text-headline-md font-bold text-primary">GastroAdmin</h1>
-          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mt-base">Management Suite</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-headline-md text-headline-md font-bold text-primary">GastroAdmin</h1>
+              <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mt-base">Management Suite</p>
+            </div>
+            {isMobile && (
+              <button
+                onClick={() => setSidebarAbierto(false)}
+                className="p-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                aria-label="Cerrar sidebar"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            )}
+          </div>
         </div>
-        <nav className="flex-grow">
+        <nav className="flex-grow overflow-y-auto">
           <ul className="space-y-base">
-            <SidebarLink to="/admin" icon="dashboard" label="Dashboard" />
-            <SidebarLink to="/admin/pedidos" icon="receipt_long" label="Orders" />
-            <SidebarLink to="/admin/productos" icon="inventory_2" label="Products" />
-            <SidebarLink to="/admin/ingredientes" icon="set_meal" label="Ingredients" />
-            <SidebarLink to="/admin/categorias" icon="category" label="Categories" />
-            <SidebarLink to="/admin/usuarios" icon="group" label="Users" />
-            <SidebarLink to="/admin/pagos" icon="payments" label="Payments" />
-            <SidebarLink to="/admin/unidades-medida" icon="straighten" label="Units" />
-            <SidebarLink to="/admin/formas-pago" icon="credit_card" label="Pay Methods" />
-            <SidebarLink to="/admin/estados-pedido" icon="alt_route" label="Order States" />
+            <SidebarLink to="/admin" icon="dashboard" label="Dashboard" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/pedidos" icon="receipt_long" label="Orders" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/productos" icon="inventory_2" label="Products" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/ingredientes" icon="set_meal" label="Ingredients" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/categorias" icon="category" label="Categories" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/usuarios" icon="group" label="Users" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/pagos" icon="payments" label="Payments" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/unidades-medida" icon="straighten" label="Units" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/formas-pago" icon="credit_card" label="Pay Methods" onNavigate={cerrarSidebar} />
+            <SidebarLink to="/admin/estados-pedido" icon="alt_route" label="Order States" onNavigate={cerrarSidebar} />
           </ul>
         </nav>
         <div className="px-lg py-md border-t border-outline-variant">
@@ -124,7 +175,25 @@ export function AdminLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 ml-[280px] px-margin-desktop py-2xl max-w-[calc(100vw-280px)]">
+
+      {/* Main content */}
+      <main
+        className={`
+          flex-1 px-margin-mobile md:px-margin-desktop py-2xl
+          transition-all duration-300
+          ${isMobile ? "ml-0 max-w-full" : "ml-[280px] max-w-[calc(100vw-280px)]"}
+        `}
+      >
+        {/* Hamburger button (mobile only) */}
+        {isMobile && (
+          <button
+            onClick={() => setSidebarAbierto((prev) => !prev)}
+            className="mb-xl p-sm rounded-lg text-on-surface hover:bg-surface-container-high transition-colors"
+            aria-label="Abrir menú"
+          >
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+        )}
         <Outlet />
       </main>
     </div>

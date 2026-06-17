@@ -2,6 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell,
   ResponsiveContainer, Legend,
 } from "recharts";
+import type { TooltipValueType } from "recharts";
 import { useAuthStore } from "../../store/authStore";
 import { HERO_IMAGE } from "../../shared/images";
 import { formatARS } from "../../shared/currency";
@@ -22,10 +23,14 @@ const estadoColors: Record<string, string> = {
 const fpColorsArr = ["#06b6d4", "#ec4899", "#14b8a6", "#6366f1"];
 
 function toRechartsData(data: { fecha: string; total: number }[]) {
-  return data.map((item, i) => ({
-    dia: DIAS[i % 7],
-    total: Number(item.total),
-  }));
+  return data.map((item) => {
+    const d = new Date(item.fecha + "T00:00:00");
+    const diaIdx = d.getDay(); // 0=Dom, 1=Lun, ...
+    return {
+      dia: DIAS[diaIdx === 0 ? 6 : diaIdx - 1], // Convertir a LUN=0
+      total: Number(item.total),
+    };
+  });
 }
 
 export function DashboardPage() {
@@ -108,7 +113,7 @@ export function DashboardPage() {
                 <XAxis dataKey="dia" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip
-                  formatter={(value: number) => [formatARS(value), "Ventas"]}
+                  formatter={(value: TooltipValueType | undefined) => [formatARS(Number(value) || 0), "Ventas"]}
                   contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#f1f5f9" }}
                 />
                 <Bar dataKey="total" radius={[8, 8, 0, 0]} maxBarSize={40}>

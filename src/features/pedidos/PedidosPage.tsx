@@ -62,7 +62,7 @@ export function PedidosPage() {
                     <div className="flex items-center gap-xl">
                       <div className="text-right">
                         <p className="font-label-sm text-label-sm text-on-surface-variant">Total</p>
-                        <p className="font-title-lg text-title-lg text-on-surface font-bold">${pedido.total.toFixed(2)}</p>
+                        <p className="font-title-lg text-title-lg text-on-surface font-bold">${Number(pedido.total).toFixed(2)}</p>
                       </div>
                       <span className={`inline-flex items-center px-md py-base rounded-lg font-label-sm text-label-sm border backdrop-blur-sm ${estadoActual.color}`}>
                         {estadoActual.label}
@@ -78,9 +78,9 @@ export function PedidosPage() {
                         </div>
                         <div className="flex-grow">
                           <p className="font-label-lg text-label-lg text-on-surface">{det.nombre_snapshot}</p>
-                          <p className="font-body-md text-body-md text-on-surface-variant">{det.cantidad}x ${det.precio_snapshot.toFixed(2)}</p>
+                          <p className="font-body-md text-body-md text-on-surface-variant">{det.cantidad}x ${Number(det.precio_snapshot).toFixed(2)}</p>
                         </div>
-                        <p className="font-label-lg text-label-lg text-primary font-bold">${det.subtotal_snap.toFixed(2)}</p>
+                        <p className="font-label-lg text-label-lg text-primary font-bold">${Number(det.subtotal_snap).toFixed(2)}</p>
                       </div>
                     ))}
                   </div>
@@ -95,7 +95,7 @@ export function PedidosPage() {
                               ? prompt("Motivo de la cancelación:")
                               : undefined;
                             if (t.codigo === "CANCELADO" && !motivo) return;
-                            avanzar({ id: pedido.id, data: { estado_codigo: t.codigo, motivo } });
+                            avanzar({ id: pedido.id, data: { estado_codigo: t.codigo, motivo: motivo ?? undefined } });
                           }}
                           className="px-xl py-md bg-primary text-on-primary font-label-lg text-label-lg rounded-lg font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/10"
                         >

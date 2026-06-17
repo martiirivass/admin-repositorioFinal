@@ -52,15 +52,6 @@ export function useEliminarProducto() {
   });
 }
 
-export function useSubirImagen() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, archivo }: { id: number; archivo: File }) =>
-      productService.subirImagen(id, archivo),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
-  });
-}
-
 export function useSubirImagenUpload() {
   const qc = useQueryClient();
   return useMutation({
