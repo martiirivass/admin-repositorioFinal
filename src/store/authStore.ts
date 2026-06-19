@@ -7,6 +7,7 @@ interface AuthStore {
   user: User | null;
   isLogged: boolean;
   isLoading: boolean;
+  accessToken: string | null;
   checkAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -19,24 +20,25 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       isLogged: false,
       isLoading: true,
+      accessToken: null,
 
       checkAuth: async () => {
         try {
-          const user = await authService.checkAuth();
-          set({ user, isLogged: true, isLoading: false });
+          const { user, accessToken } = await authService.checkAuth();
+          set({ user, isLogged: true, isLoading: false, accessToken });
         } catch {
           set({ user: null, isLogged: false, isLoading: false });
         }
       },
 
       login: async (email: string, password: string) => {
-        const user = await authService.login(email, password);
-        set({ user, isLogged: true });
+        const { user, accessToken } = await authService.login(email, password);
+        set({ user, isLogged: true, accessToken });
       },
 
       logout: async () => {
         await authService.logout();
-        set({ user: null, isLogged: false });
+        set({ user: null, isLogged: false, accessToken: null });
       },
 
       hasRole: (role: string) => {
@@ -47,7 +49,7 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: "auth-store",
-      partialize: (state) => ({ user: state.user, isLogged: state.isLogged }),
+      partialize: (state) => ({ user: state.user, isLogged: state.isLogged, accessToken: state.accessToken }),
     }
   )
 );

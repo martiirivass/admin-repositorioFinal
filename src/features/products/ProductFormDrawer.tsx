@@ -2,7 +2,7 @@ import { useCategorias } from "../categorias/useCategorias";
 import { useIngredientes } from "../ingredientes/useIngredientes";
 import { useProductForm } from "./hooks/useProductForm";
 import { useImageUpload } from "./hooks/useImageUpload";
-import { getProductImage } from "../../shared/images";
+
 import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "./types";
 
 interface Props {
@@ -79,7 +79,9 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
             ) : producto?.imagen_url && !img.removeExisting ? (
               <img src={producto.imagen_url} alt={producto.nombre} className="w-full h-full object-cover" />
             ) : (
-              <img src={getProductImage(producto?.id || 0, 0)} alt="Placeholder" className="w-full h-full object-cover opacity-50" />
+              <div className="w-full h-full flex items-center justify-center bg-surface-container-high">
+                <span className="material-symbols-outlined text-[48px] text-on-surface-variant/30">image</span>
+              </div>
             )}
             {!readonly && !img.uploading && (
               <div className="absolute inset-0 flex items-center justify-center gap-sm opacity-0 group-hover:opacity-100 transition-opacity bg-surface-dim/60">

@@ -5,7 +5,7 @@ import { useAuthStore } from "../../store/authStore";
 import { ProductFormDrawer } from "./ProductFormDrawer";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
 import { TableSkeleton } from "../../shared/components/Skeleton";
-import { getProductImage } from "../../shared/images";
+
 import { formatARS } from "../../shared/currency";
 import { useToast } from "../../shared/components/Toast";
 import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "./types";
@@ -162,7 +162,7 @@ export function ProductsPage() {
                         {p.imagen_url ? (
                           <img src={p.imagen_url} alt={p.nombre} className="w-full h-full object-cover" />
                         ) : (
-                          <img src={getProductImage(p.id, idx)} alt={p.nombre} className="w-full h-full object-cover" />
+                          <span className="material-symbols-outlined text-[28px] text-on-surface-variant/50">image</span>
                         )}
                       </div>
                       <div>

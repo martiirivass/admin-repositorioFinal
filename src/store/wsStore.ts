@@ -76,6 +76,11 @@ export const useWsStore = create<WSState>((set) => ({
     const connectWs = () => {
       if (intentionalClose) return;
 
+      // Don't create duplicate connections
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+
       try {
         ws = new WebSocket(url);
       } catch {
@@ -85,6 +90,10 @@ export const useWsStore = create<WSState>((set) => ({
 
       ws.onopen = () => {
         reconnectCount = 0;
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+          reconnectTimer = null;
+        }
         set({ connected: true, reconnectAttempts: 0 });
       };
 

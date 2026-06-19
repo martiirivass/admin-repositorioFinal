@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useIngredientes, useCrearIngrediente, useActualizarIngrediente, useEliminarIngrediente } from "./useIngredientes";
 import { useAuthStore } from "../../store/authStore";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import { useToast } from "../../shared/components/Toast";
 import type { IngredienteRead } from "./types";
 
 export function IngredientesPage() {
@@ -17,14 +18,33 @@ export function IngredientesPage() {
   const [esAlergeno, setEsAlergeno] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IngredienteRead | null>(null);
+  const { showToast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
     if (editingId) {
-      actualizar({ id: editingId, data: { nombre, descripcion: descripcion || null, es_alergeno: esAlergeno } });
+      actualizar(
+        { id: editingId, data: { nombre, descripcion: descripcion || null, es_alergeno: esAlergeno } },
+        {
+          onSuccess: () => showToast("Ingrediente actualizado correctamente", "success"),
+          onError: (err: any) => {
+            const msg = err?.response?.data?.detail || err?.message || "Error al actualizar ingrediente";
+            showToast(msg, "error");
+          },
+        }
+      );
     } else {
-      crear({ nombre, descripcion: descripcion || null, es_alergeno: esAlergeno });
+      crear(
+        { nombre, descripcion: descripcion || null, es_alergeno: esAlergeno },
+        {
+          onSuccess: () => showToast("Ingrediente creado correctamente", "success"),
+          onError: (err: any) => {
+            const msg = err?.response?.data?.detail || err?.message || "Error al crear ingrediente";
+            showToast(msg, "error");
+          },
+        }
+      );
     }
     setNombre("");
     setDescripcion("");
@@ -56,7 +76,14 @@ export function IngredientesPage() {
         cancelText="Cancelar"
         destructive
         onConfirm={() => {
-          if (deleteTarget) eliminar(deleteTarget.id);
+          if (deleteTarget)
+            eliminar(deleteTarget.id, {
+              onSuccess: () => showToast("Ingrediente eliminado", "success"),
+              onError: (err: any) => {
+                const msg = err?.response?.data?.detail || err?.message || "Error al eliminar ingrediente";
+                showToast(msg, "error");
+              },
+            });
           setDeleteTarget(null);
         }}
         onCancel={() => setDeleteTarget(null)}

@@ -20,14 +20,17 @@ export function useAdminOrdersFeed() {
   // ── Configure auth refresh endpoint for WS token refresh ────────────
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-    setAuthRefreshUrl(`${apiUrl}/auth/refresh`);
+    setAuthRefreshUrl(`${apiUrl}/api/v1/auth/refresh`);
   }, [setAuthRefreshUrl]);
 
   // ── Connect to admin WS feed only while authenticated ───────────────
   useEffect(() => {
     if (!isLogged) return;
 
-    const wsUrl = `${getWsBaseUrl()}/ws/pedidos`;
+    const token = useAuthStore.getState().accessToken;
+    const wsUrl = token
+      ? `${getWsBaseUrl()}/ws/pedidos?token=${token}`
+      : `${getWsBaseUrl()}/ws/pedidos`;
     connect(wsUrl);
 
     return () => {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useUnidadesMedida, useCrearUnidadMedida, useActualizarUnidadMedida, useEliminarUnidadMedida } from "./useUnidadMedida";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
+import { useToast } from "../../shared/components/Toast";
 import type { UnidadMedidaRead } from "./types";
 
 export function UnidadMedidaPage() {
@@ -14,14 +15,33 @@ export function UnidadMedidaPage() {
   const [tipo, setTipo] = useState("unidad");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UnidadMedidaRead | null>(null);
+  const { showToast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim() || !simbolo.trim()) return;
     if (editingId) {
-      actualizar({ id: editingId, data: { nombre, simbolo, tipo } });
+      actualizar(
+        { id: editingId, data: { nombre, simbolo, tipo } },
+        {
+          onSuccess: () => showToast("Unidad actualizada correctamente", "success"),
+          onError: (err: any) => {
+            const msg = err?.response?.data?.detail || err?.message || "Error al actualizar unidad";
+            showToast(msg, "error");
+          },
+        }
+      );
     } else {
-      crear({ nombre, simbolo, tipo });
+      crear(
+        { nombre, simbolo, tipo },
+        {
+          onSuccess: () => showToast("Unidad creada correctamente", "success"),
+          onError: (err: any) => {
+            const msg = err?.response?.data?.detail || err?.message || "Error al crear unidad";
+            showToast(msg, "error");
+          },
+        }
+      );
     }
     setNombre(""); setSimbolo(""); setTipo("unidad"); setEditingId(null);
   };
@@ -47,7 +67,14 @@ export function UnidadMedidaPage() {
         cancelText="Cancelar"
         destructive
         onConfirm={() => {
-          if (deleteTarget) eliminar(deleteTarget.id);
+          if (deleteTarget)
+            eliminar(deleteTarget.id, {
+              onSuccess: () => showToast("Unidad eliminada", "success"),
+              onError: (err: any) => {
+                const msg = err?.response?.data?.detail || err?.message || "Error al eliminar unidad";
+                showToast(msg, "error");
+              },
+            });
           setDeleteTarget(null);
         }}
         onCancel={() => setDeleteTarget(null)}
