@@ -60,3 +60,21 @@ export function useSubirImagenUpload() {
     onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 }
+
+export function useCrearProductoConImagen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ data, archivo }: { data: ProductoCreate; archivo: File | null }) =>
+      productService.createWithImage(data, archivo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+  });
+}
+
+export function useActualizarProductoConImagen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data, archivo, eliminarImagen }: { id: number; data: ProductoUpdate; archivo: File | null; eliminarImagen?: boolean }) =>
+      productService.updateWithImage(id, data, archivo, eliminarImagen),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
+  });
+}

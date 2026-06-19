@@ -58,4 +58,45 @@ export const productService = {
   delete: async (id: number) => {
     await api.delete(`/productos/${id}`);
   },
+
+  createWithImage: async (producto: ProductoCreate, archivo: File | null): Promise<ProductoReadWithRelations> => {
+    const formData = new FormData();
+    formData.append("nombre", producto.nombre);
+    if (producto.descripcion) formData.append("descripcion", producto.descripcion);
+    formData.append("precio_base", String(producto.precio_base));
+    formData.append("stock_cantidad", String(producto.stock_cantidad || 0));
+    formData.append("disponible", String(producto.disponible ?? true));
+    formData.append("categoria_ids", JSON.stringify(producto.categoria_ids));
+    formData.append("ingrediente_ids", JSON.stringify(producto.ingrediente_ids));
+
+    if (archivo) {
+      formData.append("imagen", archivo);
+    }
+
+    const { data } = await api.post("/productos/con-imagen", formData);
+    return data as ProductoReadWithRelations;
+  },
+
+  updateWithImage: async (id: number, producto: ProductoUpdate, archivo: File | null, eliminarImagen: boolean = false): Promise<ProductoReadWithRelations> => {
+    const formData = new FormData();
+
+    if (producto.nombre !== undefined) formData.append("nombre", producto.nombre);
+    if (producto.descripcion !== undefined) formData.append("descripcion", producto.descripcion || "");
+    if (producto.precio_base !== undefined) formData.append("precio_base", String(producto.precio_base));
+    if (producto.stock_cantidad !== undefined) formData.append("stock_cantidad", String(producto.stock_cantidad));
+    if (producto.disponible !== undefined) formData.append("disponible", String(producto.disponible));
+    if (producto.categoria_ids !== undefined) formData.append("categoria_ids", JSON.stringify(producto.categoria_ids));
+    if (producto.ingrediente_ids !== undefined) formData.append("ingrediente_ids", JSON.stringify(producto.ingrediente_ids));
+
+    if (archivo) {
+      formData.append("imagen", archivo);
+    }
+
+    if (eliminarImagen) {
+      formData.append("eliminar_imagen", "true");
+    }
+
+    const { data } = await api.put(`/productos/${id}/con-imagen`, formData);
+    return data as ProductoReadWithRelations;
+  },
 };

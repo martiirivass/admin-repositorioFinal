@@ -6,6 +6,7 @@ export interface ProductoRead {
   precio: number;
   imagen_url: string | null;
   imagenes_url: string[] | null;
+  imagen_public_id: string | null;
   stock_cantidad: number;
   disponible: boolean;
 }
@@ -24,6 +25,7 @@ export interface ProductoCreate {
   categoria_ids: number[];
   ingrediente_ids: number[];
   imagenes_url?: string[];
+  imagen_public_id?: string;
 }
 
 export interface ProductoUpdate {
@@ -35,6 +37,7 @@ export interface ProductoUpdate {
   categoria_ids?: number[];
   ingrediente_ids?: number[];
   imagenes_url?: string[];
+  imagen_public_id?: string;
 }
 
 export interface ProductoDisponibilidadUpdate {

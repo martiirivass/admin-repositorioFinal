@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useProductos, useEliminarProducto, useCrearProducto, useActualizarProducto, useSubirImagenUpload } from "./useProducts";
+import { useProductos, useEliminarProducto, useCrearProductoConImagen, useActualizarProductoConImagen } from "./useProducts";
+import { uploadService } from "./productService";
 import { useAuthStore } from "../../store/authStore";
 import { ProductFormDrawer } from "./ProductFormDrawer";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
@@ -17,9 +18,8 @@ export function ProductsPage() {
   const limit = 10;
   const { data, isLoading } = useProductos({ limit, offset: page * limit, q: search || undefined });
   const { mutate: eliminar } = useEliminarProducto();
-  const { mutate: crear } = useCrearProducto();
-  const { mutate: actualizar } = useActualizarProducto();
-  const { mutateAsync: subirImagenUpload } = useSubirImagenUpload();
+  const { mutate: crearConImagen } = useCrearProductoConImagen();
+  const { mutate: actualizarConImagen } = useActualizarProductoConImagen();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProducto, setEditProducto] = useState<ProductoReadWithRelations | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductoReadWithRelations | null>(null);
@@ -48,42 +48,21 @@ export function ProductsPage() {
     }
   ) => {
     const productoId = editProducto?.id;
-    let imagenUrl: string | undefined;
-
-    // Step 1: Resolve image — three cases
-    if (archivo) {
-      // Case A: New file selected → upload to Cloudinary
-      try {
-        const uploadResult = await subirImagenUpload({ file: archivo, folder: "productos" });
-        imagenUrl = uploadResult.secure_url;
-        showToast("Imagen subida correctamente", "success");
-      } catch (err: any) {
-        const msg = err?.response?.data?.detail || err?.message || "Error al subir imagen";
-        showToast(msg, "error");
-        return;
-      }
-    } else if (imgContext?.cloudinaryUrl) {
-      // Case B: Already uploaded via hook (pre-upload) → use that URL
-      imagenUrl = imgContext.cloudinaryUrl;
-    } else if (imgContext?.removeExisting) {
-      // Case C: User removed existing image without uploading a new one
-      imagenUrl = undefined;
-    }
-
-    // Step 2: Build product data
-    const productData = { ...formData } as any;
-    if (imagenUrl) {
-      productData.imagenes_url = [imagenUrl];
-    } else if (imgContext?.removeExisting && !archivo) {
-      // Explicitly clear images when user removed existing image
-      productData.imagenes_url = [];
-    }
 
     if (productoId) {
-      actualizar(
-        { id: productoId, data: productData as ProductoUpdate },
+      actualizarConImagen(
         {
-          onSuccess: () => showToast("Producto actualizado correctamente", "success"),
+          id: productoId,
+          data: formData as ProductoUpdate,
+          archivo: archivo || null,
+          eliminarImagen: !!(imgContext?.removeExisting && !archivo),
+        },
+        {
+          onSuccess: () => {
+            showToast("Producto actualizado correctamente", "success");
+            setDrawerOpen(false);
+            setEditProducto(null);
+          },
           onError: (err: any) => {
             const msg = err?.response?.data?.detail || err?.message || "Error al actualizar producto";
             showToast(msg, "error");
@@ -91,18 +70,13 @@ export function ProductsPage() {
         }
       );
     } else {
-      crear(
-        productData as ProductoCreate,
+      crearConImagen(
+        { data: formData as ProductoCreate, archivo: archivo || null },
         {
-          onSuccess: (nuevo) => {
+          onSuccess: () => {
             showToast("Producto creado correctamente", "success");
-            // If we have an image URL but the create already went through, update the product
-            if (imagenUrl && nuevo?.id) {
-              actualizar(
-                { id: nuevo.id, data: { imagenes_url: [imagenUrl] } as ProductoUpdate },
-                { onError: () => showToast("Error al asociar imagen", "error") }
-              );
-            }
+            setDrawerOpen(false);
+            setEditProducto(null);
           },
           onError: (err: any) => {
             const msg = err?.response?.data?.detail || err?.message || "Error al crear producto";
@@ -111,8 +85,26 @@ export function ProductsPage() {
         }
       );
     }
-    setDrawerOpen(false);
-    setEditProducto(null);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteTarget) {
+      // If product has a Cloudinary image, delete it first
+      if (deleteTarget.imagen_public_id) {
+        uploadService.eliminarImagen(deleteTarget.imagen_public_id).catch(() => {
+          // Ignore errors on image delete during product deletion
+        });
+      }
+
+      eliminar(deleteTarget.id, {
+        onSuccess: () => showToast("Producto eliminado", "success"),
+        onError: (err: any) => {
+          const msg = err?.response?.data?.detail || err?.message || "Error al eliminar";
+          showToast(msg, "error");
+        },
+      });
+    }
+    setDeleteTarget(null);
   };
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
@@ -272,18 +264,7 @@ export function ProductsPage() {
         confirmText="Eliminar"
         cancelText="Cancelar"
         destructive
-        onConfirm={() => {
-          if (deleteTarget) {
-            eliminar(deleteTarget.id, {
-              onSuccess: () => showToast("Producto eliminado", "success"),
-              onError: (err: any) => {
-                const msg = err?.response?.data?.detail || err?.message || "Error al eliminar";
-                showToast(msg, "error");
-              },
-            });
-          }
-          setDeleteTarget(null);
-        }}
+        onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
       />
     </div>
