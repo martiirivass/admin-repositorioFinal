@@ -42,3 +42,14 @@ export interface IngresoPorFormaPagoItem {
 export interface IngresosPorFormaPagoResponse {
   data: IngresoPorFormaPagoItem[];
 }
+
+export interface ProductoMasVendido {
+  producto_id: number;
+  nombre: string;
+  total_vendido: number;
+  ingreso_total: number;
+}
+
+export interface ProductosMasVendidosResponse {
+  data: ProductoMasVendido[];
+}

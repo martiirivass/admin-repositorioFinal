@@ -23,16 +23,18 @@ interface WSState {
   setAuthRefreshUrl: (url: string) => void;
 }
 
-async function tryRefreshToken(): Promise<boolean> {
-  if (!authRefreshUrl) return false;
+async function tryRefreshToken(): Promise<string | null> {
+  if (!authRefreshUrl) return null;
   try {
     const resp = await fetch(authRefreshUrl, {
       method: "POST",
       credentials: "include",
     });
-    return resp.ok;
+    if (!resp.ok) return null;
+    const data = await resp.json() as { access_token?: string };
+    return data.access_token ?? null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -112,8 +114,9 @@ export const useWsStore = create<WSState>((set) => ({
 
         // Auth error (4001 = no auth, 4003 = forbidden) → try refresh
         if (event.code === 4001 || event.code === 4003) {
-          const refreshed = await tryRefreshToken();
-          if (refreshed) {
+          const newToken = await tryRefreshToken();
+          if (newToken) {
+            currentUrl = currentUrl.replace(/token=[^&]+/, `token=${newToken}`);
             scheduleReconnect();
           }
           return;

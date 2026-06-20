@@ -7,7 +7,8 @@ import { useAuthStore } from "../../store/authStore";
 import { HERO_IMAGE } from "../../shared/images";
 import { formatARS } from "../../shared/currency";
 import { CardSkeleton, ChartSkeleton } from "../../shared/components/Skeleton";
-import { useResumenStats, useVentasSemanales, usePedidosPorEstado, useIngresosPorFormaPago } from "./useDashboard";
+import { StatCard } from "../../shared/components/StatCard";
+import { useResumenStats, useVentasSemanales, usePedidosPorEstado, useIngresosPorFormaPago, useProductosMasVendidos } from "./useDashboard";
 
 const DIAS = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"];
 
@@ -39,6 +40,7 @@ export function DashboardPage() {
   const { data: ventas, isLoading: loadingVentas } = useVentasSemanales();
   const { data: pedidosEstado } = usePedidosPorEstado();
   const { data: ingresosFP } = useIngresosPorFormaPago();
+  const { data: productosTop, isLoading: loadingProductos } = useProductosMasVendidos();
 
   const chartData = ventas?.data ? toRechartsData(ventas.data) : [];
 
@@ -58,42 +60,10 @@ export function DashboardPage() {
         {loadingStats
           ? Array.from({ length: 4 }, (_, i) => <CardSkeleton key={i} />)
           : <>
-              <div className="bg-surface-container border border-outline-variant p-lg rounded-xl flex flex-col justify-between h-40 hover:bg-surface-container-high transition-all shadow-sm">
-                <div className="flex justify-between items-start">
-                  <span className="material-symbols-outlined text-primary">payments</span>
-                </div>
-                <div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Ventas Totales</p>
-                  <p className="font-headline-md text-headline-md text-on-surface">{formatARS(stats?.ventas_totales || 0)}</p>
-                </div>
-              </div>
-              <div className="bg-surface-container border border-outline-variant p-lg rounded-xl flex flex-col justify-between h-40 hover:bg-surface-container-high transition-all shadow-sm">
-                <div className="flex justify-between items-start">
-                  <span className="material-symbols-outlined text-primary">shopping_bag</span>
-                </div>
-                <div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Pedidos Hoy</p>
-                  <p className="font-headline-md text-headline-md text-on-surface">{stats?.pedidos_hoy ?? 0}</p>
-                </div>
-              </div>
-              <div className="bg-surface-container border border-outline-variant p-lg rounded-xl flex flex-col justify-between h-40 hover:bg-surface-container-high transition-all shadow-sm">
-                <div className="flex justify-between items-start">
-                  <span className="material-symbols-outlined text-primary">group_add</span>
-                </div>
-                <div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nuevos Clientes</p>
-                  <p className="font-headline-md text-headline-md text-on-surface">{stats?.clientes_nuevos ?? 0}</p>
-                </div>
-              </div>
-              <div className="bg-surface-container border border-outline-variant p-lg rounded-xl flex flex-col justify-between h-40 hover:bg-surface-container-high transition-all shadow-sm">
-                <div className="flex justify-between items-start">
-                  <span className="material-symbols-outlined text-primary">hourglass_top</span>
-                </div>
-                <div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Pendientes</p>
-                  <p className="font-headline-md text-headline-md text-on-surface">{stats?.pedidos_pendientes ?? 0}</p>
-                </div>
-              </div>
+              <StatCard icon="payments" label="Ventas Totales" value={formatARS(stats?.ventas_totales || 0)} />
+              <StatCard icon="shopping_bag" label="Pedidos Hoy" value={stats?.pedidos_hoy ?? 0} />
+              <StatCard icon="group_add" label="Nuevos Clientes" value={stats?.clientes_nuevos ?? 0} />
+              <StatCard icon="hourglass_top" label="Pendientes" value={stats?.pedidos_pendientes ?? 0} />
             </>
         }
       </section>
@@ -183,6 +153,25 @@ export function DashboardPage() {
             </div>
           : <p className="font-body-md text-body-md text-on-surface-variant">Sin datos de ingresos</p>
         }
+      </section>
+
+      <section className="bg-surface-container border border-outline-variant rounded-xl p-lg shadow-sm mt-lg">
+        <h3 className="font-title-lg text-title-lg text-on-surface mb-xl">Productos Más Vendidos</h3>
+        {loadingProductos ? <ChartSkeleton /> : productosTop?.data?.length ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={productosTop.data.slice().reverse()} layout="vertical" margin={{ top: 0, right: 80, left: 20, bottom: 0 }}>
+              <XAxis type="number" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="nombre" type="category" tick={{ fill: "#f1f5f9", fontSize: 11 }} axisLine={false} tickLine={false} width={160} />
+              <Tooltip
+                formatter={(value: TooltipValueType | undefined) => [value, "Unidades vendidas"]}
+                contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#f1f5f9" }}
+              />
+              <Bar dataKey="total_vendido" radius={[0, 8, 8, 0]} maxBarSize={20} fill="#3b82f6" />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="font-body-md text-body-md text-on-surface-variant">Sin datos de ventas</p>
+        )}
       </section>
     </div>
   );

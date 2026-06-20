@@ -28,3 +28,10 @@ export function useIngresosPorFormaPago() {
     queryFn: () => adminService.getIngresosPorFormaPago(),
   });
 }
+
+export function useProductosMasVendidos() {
+  return useQuery({
+    queryKey: ["admin", "stats", "productos-mas-vendidos"],
+    queryFn: () => adminService.getProductosMasVendidos(),
+  });
+}
