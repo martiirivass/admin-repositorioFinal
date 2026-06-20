@@ -146,7 +146,7 @@ export function ProductsPage() {
             ) : data?.data.length === 0 ? (
               <tr><td colSpan={6} className="text-center py-xl text-on-surface-variant">No hay productos</td></tr>
             ) : (
-              data?.data.map((p, idx) => (
+              data?.data.map((p) => (
                 <tr key={p.id} className="hover:bg-white/[0.03] transition-colors group">
                   <td className="px-lg py-lg">
                     <div className="flex items-center gap-md">
