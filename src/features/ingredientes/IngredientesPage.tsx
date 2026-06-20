@@ -9,9 +9,9 @@ export function IngredientesPage() {
   const { hasRole } = useAuthStore();
   const isAdmin = hasRole("ADMIN");
   const { data, isLoading } = useIngredientes({ limit: 50, offset: 0 });
-  const { mutate: crear } = useCrearIngrediente();
-  const { mutate: actualizar } = useActualizarIngrediente();
-  const { mutate: eliminar } = useEliminarIngrediente();
+  const { mutateAsync: crear } = useCrearIngrediente();
+  const { mutateAsync: actualizar } = useActualizarIngrediente();
+  const { mutateAsync: eliminar } = useEliminarIngrediente();
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -20,36 +20,25 @@ export function IngredientesPage() {
   const [deleteTarget, setDeleteTarget] = useState<IngredienteRead | null>(null);
   const { showToast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
-    if (editingId) {
-      actualizar(
-        { id: editingId, data: { nombre, descripcion: descripcion || null, es_alergeno: esAlergeno } },
-        {
-          onSuccess: () => showToast("Ingrediente actualizado correctamente", "success"),
-          onError: (err: any) => {
-            const msg = err?.response?.data?.detail || err?.message || "Error al actualizar ingrediente";
-            showToast(msg, "error");
-          },
-        }
-      );
-    } else {
-      crear(
-        { nombre, descripcion: descripcion || null, es_alergeno: esAlergeno },
-        {
-          onSuccess: () => showToast("Ingrediente creado correctamente", "success"),
-          onError: (err: any) => {
-            const msg = err?.response?.data?.detail || err?.message || "Error al crear ingrediente";
-            showToast(msg, "error");
-          },
-        }
-      );
+    try {
+      if (editingId) {
+        await actualizar({ id: editingId, data: { nombre, descripcion: descripcion || null, es_alergeno: esAlergeno } });
+        showToast("Ingrediente actualizado correctamente", "success");
+      } else {
+        await crear({ nombre, descripcion: descripcion || null, es_alergeno: esAlergeno });
+        showToast("Ingrediente creado correctamente", "success");
+      }
+      setNombre("");
+      setDescripcion("");
+      setEsAlergeno(false);
+      setEditingId(null);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || "Error al guardar ingrediente";
+      showToast(msg, "error");
     }
-    setNombre("");
-    setDescripcion("");
-    setEsAlergeno(false);
-    setEditingId(null);
   };
 
   const handleEdit = (ing: { id: number; nombre: string; descripcion: string | null; es_alergeno: boolean }) => {
@@ -75,15 +64,16 @@ export function IngredientesPage() {
         confirmText="Eliminar"
         cancelText="Cancelar"
         destructive
-        onConfirm={() => {
-          if (deleteTarget)
-            eliminar(deleteTarget.id, {
-              onSuccess: () => showToast("Ingrediente eliminado", "success"),
-              onError: (err: any) => {
-                const msg = err?.response?.data?.detail || err?.message || "Error al eliminar ingrediente";
-                showToast(msg, "error");
-              },
-            });
+        onConfirm={async () => {
+          if (deleteTarget) {
+            try {
+              await eliminar(deleteTarget.id);
+              showToast("Ingrediente eliminado", "success");
+            } catch (err: any) {
+              const msg = err?.response?.data?.detail || err?.message || "Error al eliminar ingrediente";
+              showToast(msg, "error");
+            }
+          }
           setDeleteTarget(null);
         }}
         onCancel={() => setDeleteTarget(null)}

@@ -6,7 +6,7 @@ import { formatARS } from "../../shared/currency";
 export function PagosPage() {
   const [pedidoFilter] = useState<number | undefined>(undefined);
   const { data, isLoading } = usePagos({ pedido_id: pedidoFilter });
-  const { mutate: crear } = useCrearPago();
+  const { mutateAsync: crear } = useCrearPago();
   const { data: formasPago } = useFormasPago();
 
   const [showForm, setShowForm] = useState(false);
@@ -15,12 +15,17 @@ export function PagosPage() {
   const [formaPagoCodigo, setFormaPagoCodigo] = useState("");
   const [referencia, setReferencia] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    crear(
-      { pedido_id: pedidoId, monto, forma_pago_codigo: formaPagoCodigo, referencia: referencia || null },
-      { onSuccess: () => { setShowForm(false); setPedidoId(0); setMonto(0); setReferencia(""); } }
-    );
+    try {
+      await crear({ pedido_id: pedidoId, monto, forma_pago_codigo: formaPagoCodigo, referencia: referencia || null });
+      setShowForm(false);
+      setPedidoId(0);
+      setMonto(0);
+      setReferencia("");
+    } catch {
+      // Error handling
+    }
   };
 
   return (

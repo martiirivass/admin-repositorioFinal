@@ -21,10 +21,13 @@ interface Props {
     }
   ) => void;
   readonly?: boolean;
+  stockOnlyEdit?: boolean;
 }
 
-export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props) {
+export function ProductFormDrawer({ producto, onClose, onSave, readonly, stockOnlyEdit = false }: Props) {
   const isEdit = !!producto;
+  const canEditAll = !readonly && !stockOnlyEdit;
+  const canEditStock = !readonly;
   const form = useProductForm(producto);
   const img = useImageUpload();
   const { data: catData } = useCategorias({ limit: 100, offset: 0 });
@@ -83,7 +86,7 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
                 <span className="material-symbols-outlined text-[48px] text-on-surface-variant/30">image</span>
               </div>
             )}
-            {!readonly && !img.uploading && (
+            {canEditAll && !img.uploading && (
               <div className="absolute inset-0 flex items-center justify-center gap-sm opacity-0 group-hover:opacity-100 transition-opacity bg-surface-dim/60">
                 <button type="button" onClick={() => img.fileInputRef.current?.click()}
                   className="px-md py-sm bg-primary text-on-primary rounded-lg font-label-lg text-label-lg hover:brightness-110 active:scale-95 transition-all shadow-lg flex items-center gap-sm">
@@ -112,13 +115,13 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
               <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Nombre del Producto</label>
               <input value={form.nombre} onChange={(e) => form.setNombre(e.target.value)}
                 className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-on-surface-variant/40"
-                required={!isEdit} readOnly={readonly} />
+                required={!isEdit} readOnly={!canEditAll} />
             </div>
             <div className="space-y-xs">
               <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Descripción</label>
               <textarea value={form.descripcion} onChange={(e) => form.setDescripcion(e.target.value)}
                 className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none min-h-[100px] placeholder:text-on-surface-variant/40"
-                rows={4} readOnly={readonly} />
+                rows={4} readOnly={!canEditAll} />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
@@ -128,17 +131,17 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
                 <span className="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">$</span>
                 <input type="number" step="0.01" value={form.precio} onChange={(e) => form.setPrecio(Number(e.target.value))}
                   className="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-8 pr-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                  required={!isEdit} readOnly={readonly} />
+                  required={!isEdit} readOnly={!canEditAll} />
               </div>
             </div>
             <div className="space-y-xs">
               <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Stock</label>
               <input type="number" value={form.stock} onChange={(e) => form.setStock(Number(e.target.value))}
                 className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-md py-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                readOnly={readonly} />
+                readOnly={!canEditStock} />
             </div>
           </div>
-          {!readonly && (
+          {canEditStock && (
             <div className="space-y-xs">
               <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Disponible</label>
               <label className="flex items-center gap-md cursor-pointer">
@@ -152,7 +155,7 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
             <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Categorías</label>
             <div className="flex flex-wrap gap-xs p-sm bg-surface-container-lowest border border-outline-variant rounded-lg min-h-[60px]">
               {categorias.map((cat: { id: number; nombre: string }) => (
-                <button key={cat.id} type="button" onClick={() => !readonly && form.toggleCat(cat.id)}
+                <button key={cat.id} type="button" onClick={() => canEditAll && form.toggleCat(cat.id)}
                   className={`px-sm py-1 rounded-lg font-label-sm text-label-sm transition-colors ${
                     form.selectedCats.includes(cat.id)
                       ? "bg-surface-container-highest text-primary ring-1 ring-primary/20"
@@ -167,7 +170,7 @@ export function ProductFormDrawer({ producto, onClose, onSave, readonly }: Props
             <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Ingredientes</label>
             <div className="flex flex-wrap gap-xs p-sm bg-surface-container-lowest border border-outline-variant rounded-lg min-h-[60px]">
               {ingredientes.map((ing: { id: number; nombre: string }) => (
-                <button key={ing.id} type="button" onClick={() => !readonly && form.toggleIng(ing.id)}
+                <button key={ing.id} type="button" onClick={() => canEditAll && form.toggleIng(ing.id)}
                   className={`px-sm py-1 rounded-lg font-label-sm text-label-sm transition-colors ${
                     form.selectedIngs.includes(ing.id)
                       ? "bg-surface-container-highest text-primary ring-1 ring-primary/20"
