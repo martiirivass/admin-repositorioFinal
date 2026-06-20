@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useProductos, useEliminarProducto, useCrearProductoConImagen, useActualizarProductoConImagen } from "./useProducts";
+import { useProductos, useEliminarProducto, useCrearProductoConImagen, useActualizarProductoConImagen, useActualizarDisponibilidad } from "./useProducts";
 import { uploadService } from "./productService";
 import { useAuthStore } from "../../store/authStore";
 import { ProductFormDrawer } from "./ProductFormDrawer";
@@ -13,13 +13,15 @@ import type { ProductoReadWithRelations, ProductoCreate, ProductoUpdate } from "
 export function ProductsPage() {
   const { hasRole } = useAuthStore();
   const isAdmin = hasRole("ADMIN");
+  const isStock = hasRole("STOCK");
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const limit = 10;
   const { data, isLoading } = useProductos({ limit, offset: page * limit, q: search || undefined });
-  const { mutate: eliminar } = useEliminarProducto();
-  const { mutate: crearConImagen } = useCrearProductoConImagen();
-  const { mutate: actualizarConImagen } = useActualizarProductoConImagen();
+  const { mutateAsync: eliminar } = useEliminarProducto();
+  const { mutateAsync: crearConImagen } = useCrearProductoConImagen();
+  const { mutateAsync: actualizarConImagen } = useActualizarProductoConImagen();
+  const { mutateAsync: actualizarDisponibilidad } = useActualizarDisponibilidad();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editProducto, setEditProducto] = useState<ProductoReadWithRelations | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductoReadWithRelations | null>(null);
@@ -49,60 +51,50 @@ export function ProductsPage() {
   ) => {
     const productoId = editProducto?.id;
 
-    if (productoId) {
-      actualizarConImagen(
-        {
-          id: productoId,
-          data: formData as ProductoUpdate,
-          archivo: archivo || null,
-          eliminarImagen: !!(imgContext?.removeExisting && !archivo),
-        },
-        {
-          onSuccess: () => {
-            showToast("Producto actualizado correctamente", "success");
-            setDrawerOpen(false);
-            setEditProducto(null);
-          },
-          onError: (err: any) => {
-            const msg = err?.response?.data?.detail || err?.message || "Error al actualizar producto";
-            showToast(msg, "error");
-          },
+    try {
+      if (productoId) {
+        if (isAdmin) {
+          await actualizarConImagen({
+            id: productoId,
+            data: formData as ProductoUpdate,
+            archivo: archivo || null,
+            eliminarImagen: !!(imgContext?.removeExisting && !archivo),
+          });
+        } else {
+          const data = formData as ProductoUpdate;
+          await actualizarDisponibilidad({
+            id: productoId,
+            data: {
+              disponible: data.disponible ?? editProducto!.disponible,
+              stock_cantidad: data.stock_cantidad,
+            },
+          });
         }
-      );
-    } else {
-      crearConImagen(
-        { data: formData as ProductoCreate, archivo: archivo || null },
-        {
-          onSuccess: () => {
-            showToast("Producto creado correctamente", "success");
-            setDrawerOpen(false);
-            setEditProducto(null);
-          },
-          onError: (err: any) => {
-            const msg = err?.response?.data?.detail || err?.message || "Error al crear producto";
-            showToast(msg, "error");
-          },
-        }
-      );
+        showToast("Producto actualizado correctamente", "success");
+      } else if (isAdmin) {
+        await crearConImagen({ data: formData as ProductoCreate, archivo: archivo || null });
+        showToast("Producto creado correctamente", "success");
+      }
+      setDrawerOpen(false);
+      setEditProducto(null);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || "Error al guardar producto";
+      showToast(msg, "error");
     }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteTarget) {
-      // If product has a Cloudinary image, delete it first
-      if (deleteTarget.imagen_public_id) {
-        uploadService.eliminarImagen(deleteTarget.imagen_public_id).catch(() => {
-          // Ignore errors on image delete during product deletion
-        });
+      try {
+        if (deleteTarget.imagen_public_id) {
+          await uploadService.eliminarImagen(deleteTarget.imagen_public_id).catch(() => {});
+        }
+        await eliminar(deleteTarget.id);
+        showToast("Producto eliminado", "success");
+      } catch (err: any) {
+        const msg = err?.response?.data?.detail || err?.message || "Error al eliminar";
+        showToast(msg, "error");
       }
-
-      eliminar(deleteTarget.id, {
-        onSuccess: () => showToast("Producto eliminado", "success"),
-        onError: (err: any) => {
-          const msg = err?.response?.data?.detail || err?.message || "Error al eliminar";
-          showToast(msg, "error");
-        },
-      });
     }
     setDeleteTarget(null);
   };
@@ -198,9 +190,9 @@ export function ProductsPage() {
                           </button>
                         </>
                       )}
-                      {!isAdmin && (
+                      {!isAdmin && isStock && (
                         <button onClick={() => handleEdit(p)} className="hover:text-primary transition-colors">
-                          <span className="material-symbols-outlined text-[20px]">visibility</span>
+                          <span className="material-symbols-outlined text-[20px]">edit</span>
                         </button>
                       )}
                     </div>
@@ -253,7 +245,8 @@ export function ProductsPage() {
           producto={editProducto}
           onClose={() => { setDrawerOpen(false); setEditProducto(null); }}
           onSave={handleSave}
-          readonly={!isAdmin}
+          readonly={false}
+          stockOnlyEdit={!isAdmin && isStock}
         />
       )}
 

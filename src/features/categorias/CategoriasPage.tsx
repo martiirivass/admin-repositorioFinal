@@ -8,10 +8,10 @@ export function CategoriasPage() {
   const { hasRole } = useAuthStore();
   const isAdmin = hasRole("ADMIN");
   const { data, isLoading } = useCategorias({ limit: 50, offset: 0 });
-  const { mutate: crear } = useCrearCategoria();
-  const { mutate: actualizar } = useActualizarCategoria();
+  const { mutateAsync: crear } = useCrearCategoria();
+  const { mutateAsync: actualizar } = useActualizarCategoria();
   const { mutate: eliminar } = useEliminarCategoria();
-  const { mutate: subirImagen } = useSubirImagenCategoria();
+  const { mutateAsync: subirImagen } = useSubirImagenCategoria();
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -39,30 +39,21 @@ export function CategoriasPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
 
-    if (editingId) {
-      actualizar(
-        { id: editingId, data: { nombre, descripcion: descripcion || null } },
-        {
-          onSuccess: () => {
-            if (imagenFile) subirImagen({ id: editingId, archivo: imagenFile });
-            resetForm();
-          },
-        }
-      );
-    } else {
-      crear(
-        { nombre, descripcion: descripcion || null },
-        {
-          onSuccess: (nuevaCat) => {
-            if (imagenFile && nuevaCat?.id) subirImagen({ id: nuevaCat.id, archivo: imagenFile });
-            resetForm();
-          },
-        }
-      );
+    try {
+      if (editingId) {
+        await actualizar({ id: editingId, data: { nombre, descripcion: descripcion || null } });
+        if (imagenFile) await subirImagen({ id: editingId, archivo: imagenFile });
+      } else {
+        const nuevaCat = await crear({ nombre, descripcion: descripcion || null });
+        if (imagenFile && nuevaCat?.id) await subirImagen({ id: nuevaCat.id, archivo: imagenFile });
+      }
+      resetForm();
+    } catch {
+      // Error handling
     }
   };
 

@@ -23,9 +23,14 @@ export function useAdminOrdersFeed() {
     setAuthRefreshUrl(`${apiUrl}/api/v1/auth/refresh`);
   }, [setAuthRefreshUrl]);
 
-  // ── Connect to admin WS feed only while authenticated ───────────────
+  // ── Connect to admin WS feed only while authenticated and has order roles ──
   useEffect(() => {
     if (!isLogged) return;
+
+    const user = useAuthStore.getState().user;
+    const roles = user?.roles ?? [];
+    const canAccessOrders = roles.some((r) => r.codigo === "ADMIN" || r.codigo === "PEDIDOS");
+    if (!canAccessOrders) return;
 
     const token = useAuthStore.getState().accessToken;
     const wsUrl = token

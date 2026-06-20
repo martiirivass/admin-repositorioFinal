@@ -6,9 +6,9 @@ import type { UnidadMedidaRead } from "./types";
 
 export function UnidadMedidaPage() {
   const { data, isLoading } = useUnidadesMedida();
-  const { mutate: crear } = useCrearUnidadMedida();
-  const { mutate: actualizar } = useActualizarUnidadMedida();
-  const { mutate: eliminar } = useEliminarUnidadMedida();
+  const { mutateAsync: crear } = useCrearUnidadMedida();
+  const { mutateAsync: actualizar } = useActualizarUnidadMedida();
+  const { mutateAsync: eliminar } = useEliminarUnidadMedida();
 
   const [nombre, setNombre] = useState("");
   const [simbolo, setSimbolo] = useState("");
@@ -17,33 +17,22 @@ export function UnidadMedidaPage() {
   const [deleteTarget, setDeleteTarget] = useState<UnidadMedidaRead | null>(null);
   const { showToast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim() || !simbolo.trim()) return;
-    if (editingId) {
-      actualizar(
-        { id: editingId, data: { nombre, simbolo, tipo } },
-        {
-          onSuccess: () => showToast("Unidad actualizada correctamente", "success"),
-          onError: (err: any) => {
-            const msg = err?.response?.data?.detail || err?.message || "Error al actualizar unidad";
-            showToast(msg, "error");
-          },
-        }
-      );
-    } else {
-      crear(
-        { nombre, simbolo, tipo },
-        {
-          onSuccess: () => showToast("Unidad creada correctamente", "success"),
-          onError: (err: any) => {
-            const msg = err?.response?.data?.detail || err?.message || "Error al crear unidad";
-            showToast(msg, "error");
-          },
-        }
-      );
+    try {
+      if (editingId) {
+        await actualizar({ id: editingId, data: { nombre, simbolo, tipo } });
+        showToast("Unidad actualizada correctamente", "success");
+      } else {
+        await crear({ nombre, simbolo, tipo });
+        showToast("Unidad creada correctamente", "success");
+      }
+      setNombre(""); setSimbolo(""); setTipo("unidad"); setEditingId(null);
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || err?.message || "Error al guardar unidad";
+      showToast(msg, "error");
     }
-    setNombre(""); setSimbolo(""); setTipo("unidad"); setEditingId(null);
   };
 
   const handleEdit = (u: { id: number; nombre: string; simbolo: string; tipo: string }) => {
@@ -66,15 +55,16 @@ export function UnidadMedidaPage() {
         confirmText="Eliminar"
         cancelText="Cancelar"
         destructive
-        onConfirm={() => {
-          if (deleteTarget)
-            eliminar(deleteTarget.id, {
-              onSuccess: () => showToast("Unidad eliminada", "success"),
-              onError: (err: any) => {
-                const msg = err?.response?.data?.detail || err?.message || "Error al eliminar unidad";
-                showToast(msg, "error");
-              },
-            });
+        onConfirm={async () => {
+          if (deleteTarget) {
+            try {
+              await eliminar(deleteTarget.id);
+              showToast("Unidad eliminada", "success");
+            } catch (err: any) {
+              const msg = err?.response?.data?.detail || err?.message || "Error al eliminar unidad";
+              showToast(msg, "error");
+            }
+          }
           setDeleteTarget(null);
         }}
         onCancel={() => setDeleteTarget(null)}
