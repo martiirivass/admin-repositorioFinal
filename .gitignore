@@ -28,6 +28,4 @@ dist-ssr
 *.sln
 *.sw?
 
-# Build tools (defensive)
-.opencode/
-openspec/
+
